@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_glpi_computers
+    description: Staging layer for GLPI computers with standardized naming and type conversions
+    columns:
+      - name: computer_id
+        description: Unique identifier for computer
+        tests:
+          - not_null
+          - unique
+      - name: computer_uuid
+        description: UUID of computer
+        tests:
+          - not_null
+
+      - name: computer_name
+        description: Name of computer
+        tests:
+          - not_null
+
+      - name: is_template
+        description: Flag indicating if computer is a template
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 0]
+
+      - name: is_deleted
+        description: Flag indicating if computer is deleted
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 0]
+
+      - name: is_ocs_import
+        description: Flag indicating if computer was imported from OCS
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 0]
+
+      - name: computer_type
+        description: Type of computer (template or real_machine)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['template', 'real_machine']
