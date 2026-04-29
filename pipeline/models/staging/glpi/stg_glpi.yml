@@ -3,12 +3,19 @@ version: 2
 models:
   - name: stg_glpi_computers
     description: Staging layer for GLPI computers with standardized naming and type conversions
+
     columns:
-      - name: computer_id
-        description: Unique identifier for computer
+      - name: unique_id
+        description: Composite key (computer_id + source_year)
         tests:
           - not_null
           - unique
+
+      - name: computer_id
+        description: Identifier for computer (not unique across years)
+        tests:
+          - not_null
+
       - name: computer_uuid
         description: UUID of computer
         tests:
