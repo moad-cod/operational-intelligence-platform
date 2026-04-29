@@ -1,0 +1,68 @@
+version: 2
+
+sources:
+  - name: glpi_2013
+    database: db_glpi_2013  
+    schema: db_glpi_2013  
+    tables:
+      - name: glpi_tickets
+      - name: glpi_users
+      - name: glpi_computers
+      - name: glpi_logs
+      - name: glpi_ticketfollowups
+      - name: glpi_infocoms
+      - name: glpi_deviceprocessors
+      - name: glpi_devicememories
+      - name: glpi_devicegraphiccards
+
+  - name: glpi_2014
+    database: db_glpi_2014  
+    schema: db_glpi_2014  
+    tables:
+      - name: glpi_tickets
+      - name: glpi_users
+      - name: glpi_computers
+      - name: glpi_logs
+      - name: glpi_ticketfollowups
+      - name: glpi_infocoms
+      - name: glpi_deviceprocessors
+      - name: glpi_devicememories
+      - name: glpi_devicegraphiccards
+
+  - name: glpi_2015
+    database: db_glpi_2015  
+    schema: db_glpi_2015  
+    tables:
+      - name: glpi_tickets
+      - name: glpi_users
+      - name: glpi_computers
+      - name: glpi_logs
+      - name: glpi_ticketfollowups
+      - name: glpi_infocoms
+      - name: glpi_deviceprocessors
+      - name: glpi_devicememories
+      - name: glpi_devicegraphiccards
+
+  - name: ocs_2013
+    database: db_ocs_2013
+    schema: db_ocs_2013
+    tables:
+      - name: hardware
+      - name: bios
+      - name: drives
+
+  - name: ocs_2014
+    database: db_ocs_2014
+    schema: db_ocs_2014
+    tables:
+      - name: hardware
+      - name: bios
+      - name: drives
+
+  - name: ocs_2015
+    database: db_ocs_2015
+    schema: db_ocs_2015
+    tables:
+      - name: hardware
+      - name: bios
+      - name: drives
