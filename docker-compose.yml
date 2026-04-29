@@ -1,0 +1,19 @@
+services:
+  mysql_source:
+    image: mysql:8.0
+    container_name: glpi_ocs_db
+    environment:
+      MYSQL_ROOT_PASSWORD: secret_root
+      MYSQL_USER: glpi
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"
+    volumes:
+      # Map your local sql files to the entrypoint directory
+      - ./source_db_init:/docker-entrypoint-initdb.d
+    networks:
+      - pfe_network
+
+networks:
+  pfe_network:
+    driver: bridge
