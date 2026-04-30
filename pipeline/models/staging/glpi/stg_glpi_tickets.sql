@@ -1,48 +1,34 @@
 WITH source AS (
 
     SELECT *
-    FROM {{ ref('base_glpi_tickets') }}
+    FROM {{ ref('base_glpi_ticketfollowups') }}
 
 ),
 
 cleaned AS (
 
     SELECT
-        -- Correct PK
-        CONCAT(year, '_', id) AS ticket_pk,
+        -- Composite PK (because ids repeat across years)
+        CONCAT(year, '_', id) AS ticket_followup_pk,
 
-        id AS ticket_id,
-        name AS ticket_name,
+        -- Business keys
+        id AS followup_id,
+        tickets_id AS ticket_id,
 
-        -- FIXED dates
+        -- Dates
         date AS created_at,
 
-        CASE 
-            WHEN solvedate < date THEN NULL
-            ELSE solvedate
-        END AS solved_at,
+        -- Dimensions
+        users_id AS user_id,
+        requesttypes_id AS request_type_id,
 
-        CASE 
-            WHEN closedate < date THEN NULL
-            ELSE closedate
-        END AS closed_at,
+        -- Content
+        content,
 
-        status,
-        priority,
+        -- Flags
+        is_private,
 
-        users_id_recipient AS recipient_user_id,
-        users_id_lastupdater AS last_updater_user_id,
-        entities_id AS entity_id,
-
-        -- additional fields
-        begin_waiting_date,
-        waiting_duration,
-        close_delay_stat,
-        solve_delay_stat,
-        takeintoaccount_delay_stat,
-        actiontime,
-        is_deleted,
-
+        -- Metadata
         year AS source_year
 
     FROM source
