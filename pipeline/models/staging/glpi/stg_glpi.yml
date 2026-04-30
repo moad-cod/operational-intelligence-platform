@@ -53,3 +53,7 @@ models:
           - not_null
           - accepted_values:
               values: ['template', 'real_machine']
+
+  - name: stg_glpi_logs
+    tests:
+      - change_type_consistency
