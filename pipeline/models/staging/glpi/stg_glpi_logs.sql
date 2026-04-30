@@ -9,10 +9,9 @@ renamed AS (
 
     SELECT
         -- 🔑 identifiers
+        CONCAT(year, '_', id) AS unique_id,
+        
         id AS log_id,
-
-        CONCAT(id, '_', year) AS unique_id,
-
         items_id AS entity_id,
         itemtype AS entity_type,
 

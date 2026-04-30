@@ -1,9 +1,8 @@
 SELECT
-    id AS computer_id,
-
     -- Composite key here
-    CONCAT(id, '_', year) AS unique_id,
-
+    CONCAT(year, '_', id) AS unique_id,
+    
+    id AS computer_id,
     uuid AS computer_uuid,
     name AS computer_name,
 
