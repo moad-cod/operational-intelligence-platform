@@ -55,5 +55,52 @@ models:
               values: ['template', 'real_machine']
 
   - name: stg_glpi_logs
+    description: Staging layer for GLPI logs
+
+    columns:
+      # primary key
+      - name: unique_id
+        description: Unique identifier for log event
+        tests:
+          - not_null
+          - unique
+
+      - name: log_id
+        description: Identifier for log event (not unique across years)
+        tests:
+          - not_null
+          
+      # entity
+      - name: entity_id
+        description: ID of related entity
+        tests:
+          - not_null
+
+      - name: entity_type
+        description: Type of entity (Computer, Ticket, etc.)
+        tests:
+          - not_null
+
+      # timestamp
+      - name: updated_at
+        description: Timestamp of modification
+        tests:
+          - not_null
+
+      # derived logic
+      - name: change_type
+        description: Type of change (created, updated, deleted, no_change)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['created', 'updated', 'deleted', 'no_change']
+
+      # source tracking
+      - name: source_year
+        description: Source year of data
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013', '2014', '2015']
     tests:
       - change_type_consistency
