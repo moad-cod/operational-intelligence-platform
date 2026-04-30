@@ -8,16 +8,24 @@ WITH source AS (
 cleaned AS (
 
     SELECT
-        -- 🔑 Correct PK
+        -- Correct PK
         CONCAT(year, '_', id) AS ticket_pk,
 
         id AS ticket_id,
         name AS ticket_name,
 
-        -- Dates (no TIMESTAMP in MySQL)
+        -- FIXED dates
         date AS created_at,
-        solvedate AS solved_at,
-        closedate AS closed_at,
+
+        CASE 
+            WHEN solvedate < date THEN NULL
+            ELSE solvedate
+        END AS solved_at,
+
+        CASE 
+            WHEN closedate < date THEN NULL
+            ELSE closedate
+        END AS closed_at,
 
         status,
         priority,
@@ -26,7 +34,7 @@ cleaned AS (
         users_id_lastupdater AS last_updater_user_id,
         entities_id AS entity_id,
 
-        -- 🔥 your additional fields from base
+        -- additional fields
         begin_waiting_date,
         waiting_duration,
         close_delay_stat,
@@ -35,7 +43,7 @@ cleaned AS (
         actiontime,
         is_deleted,
 
-        year AS source_year   -- rename for consistency
+        year AS source_year
 
     FROM source
 
