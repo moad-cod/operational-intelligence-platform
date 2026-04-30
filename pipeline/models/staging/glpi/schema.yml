@@ -104,3 +104,42 @@ models:
               values: ['2013', '2014', '2015']
     tests:
       - change_type_consistency
+
+models:
+  - name: stg_glpi_tickets
+    description: "Staging model for GLPI tickets with cleaned schema and composite primary key"
+
+    columns:
+
+      - name: ticket_pk
+        description: "Primary key: year + id"
+        tests:
+          - not_null
+          - unique
+
+      - name: ticket_id
+        description: "Original ticket ID (not globally unique)"
+        tests:
+          - not_null
+
+      - name: created_at
+        description: "Ticket creation timestamp"
+        tests:
+          - not_null
+
+      - name: source_year
+        description: "Source year of the ticket"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013', '2014', '2015']
+
+      - name: status
+        tests:
+          - not_null
+
+      - name: is_deleted
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
