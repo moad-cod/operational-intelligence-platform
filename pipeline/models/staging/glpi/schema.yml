@@ -223,3 +223,35 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1]
+  
+  - name: stg_glpi_users
+    description: "Cleaned GLPI users with classification and normalized fields"
+
+    columns:
+
+      # PK
+      - name: user_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: user_id
+        tests:
+          - not_null
+
+      - name: user_name
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013', '2014', '2015']
+
+      # NEW COLUMN
+      - name: user_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['SYSTEM', 'SERVICE', 'HUMAN', 'TEST', 'UNKNOWN']
