@@ -461,3 +461,62 @@ models:
           - not_null
           - accepted_values:
               values: ['2013','2014','2015']
+
+  - name: stg_ocs_hardware
+    description: "Cleaned OCS hardware data"
+
+    columns:
+
+      - name: hardware_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: device_id
+        tests:
+          - not_null
+
+      - name: device_name
+        tests:
+          - not_null
+
+      - name: os_family
+        tests:
+          - accepted_values:
+              values:
+                - Windows XP
+                - Windows 7
+                - Windows 8
+                - Windows 10
+                - Windows Other
+                - Other
+
+      - name: memory_tier
+        tests:
+          - accepted_values:
+              values:
+                - unknown
+                - invalid_or_legacy
+                - low
+                - medium
+                - high
+
+      - name: architecture
+        tests:
+          - accepted_values:
+              values:
+                - x86
+                - x64
+                - unknown
+
+      - name: device_status
+        tests:
+          - accepted_values:
+              values:
+                - active
+                - inactive
+                - stale
