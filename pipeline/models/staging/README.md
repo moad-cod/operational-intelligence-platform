@@ -1,267 +1,326 @@
-# 🧱 Staging Layer — Preparing Atomic Building Blocks
+# 🧱 Staging Layer — Atomic Data Foundation
 
-The staging layer is where we prepare clean, standardized, and reliable datasets from raw sources.
-These models act as the **foundation for all downstream transformations (fct, marts, ML features).**
+The staging layer transforms raw data from **GLPI** and **OCS** into clean, standardized, and reliable datasets.
 
----
+It acts as the **foundation of the data pipeline**, ensuring that all downstream models (analytics, dashboards, ML) are built on trusted data.
 
-## 📂 Naming Convention
-
-```
-stg_[source]__[entity]s.sql
-```
-
-Example:
-
-```
-stg_glpi__tickets.sql
-```
+![alt text](image.png)
 
 ---
 
-## 🎯 Purpose of the Staging Layer
+# 📂 Project Structure
 
-* Clean and standardize raw data
-* Ensure consistency across sources (2013, 2014, 2015)
-* Prepare atomic, reusable datasets
-* Detect and handle data quality issues early
+```
+models/
+  
+  staging/
+    base/
+        glpi/
+        ocs/
+    glpi/
+    ocs/
+
+tests/
+  glpi/
+  ocs/
+```
 
 ---
 
-## ✅ Standard Transformations Applied
+# 🏷️ Naming Convention
 
-### 1. Renaming
+```
+stg_[source]__[entity].sql
+```
 
-* `date` → `created_at`
-* `solvedate` → `solved_at`
-* `closedate` → `closed_at`
-* `year` → `source_year`
+### Examples:
+
+* `stg_glpi__tickets.sql`
+* `stg_glpi__ticketfollowups.sql`
+* `stg_ocs__hardware.sql`
+* `stg_ocs__drives.sql`
 
 ---
 
-### 2. Primary Key Creation
+# 🎯 Objectives
 
-Because ticket IDs are **not globally unique across years**, we created a composite key:
+The staging layer is responsible for:
+
+* Cleaning raw data
+* Standardizing column names and formats
+* Handling multi-source datasets (2013–2015)
+* Generating stable primary keys
+* Detecting and managing data quality issues
+* Preparing atomic datasets for reuse
+
+---
+
+# 🔧 Core Transformations
+
+## 1. Column Standardization
+
+| Raw         | Staged        |
+| ----------- | ------------- |
+| `date`      | `created_at`  |
+| `solvedate` | `solved_at`   |
+| `closedate` | `closed_at`   |
+| `year`      | `source_year` |
+
+---
+
+## 2. Composite Primary Keys
+
+IDs are not unique across years → we build:
 
 ```sql
-CONCAT(year, '_', id) AS ticket_pk
+CONCAT(year, '_', id) AS <entity>_pk
 ```
 
 ---
 
-### 3. Type Handling
+## 3. Multi-Source Integration
 
-* Avoided unsupported MySQL casting (`TIMESTAMP`)
-* Used native datetime fields directly
+Data comes from:
 
----
+* `glpi_2013`
+* `glpi_2014`
+* `glpi_2015`
 
-### 4. Unioning Multiple Sources
-
-Data comes from multiple GLPI databases:
-
-* glpi_2013
-* glpi_2014
-* glpi_2015
-
-These are combined in:
+Handled in:
 
 ```
-base_glpi_tickets
-```
-
-Then cleaned in:
-
-```
-stg_glpi_tickets
+base_* → stg_*
 ```
 
 ---
 
-### 5. Data Cleaning (Critical Step)
+## 4. Data Cleaning (Critical)
 
-#### 🚨 Problem Encountered
-
-We detected invalid records:
-
-```text
-solved_at < created_at
-```
-
-Example:
+### Example: Invalid Dates
 
 ```
-created_at = 16:58
-solved_at  = 14:13 ❌
+solved_at < created_at ❌
 ```
 
----
-
-#### ✅ Solution Implemented
-
-Instead of deleting data, we **nullified invalid values**:
+### Solution:
 
 ```sql
 CASE 
     WHEN solvedate < date THEN NULL
     ELSE solvedate
-END AS solved_at
+END
 ```
-
-Same logic applied to `closed_at`.
 
 ---
 
-### 6. Optional Enhancement (Anomaly Tracking)
+## 5. Text Cleaning
 
-We introduced the possibility to track anomalies:
+* Removed empty values (`''`, `'-'`)
+* Cleaned HTML (`&gt;`)
+* Applied `TRIM`, `LOWER`
+
+---
+
+## 6. Boolean Normalization
 
 ```sql
-CASE 
-    WHEN solvedate < date THEN 1
-    ELSE 0
-END AS is_solved_anomaly
+CASE WHEN is_private = 1 THEN 1 ELSE 0 END
 ```
 
-This can be used later for:
+---
 
-* Data quality monitoring
-* AI / anomaly detection
+# 💻 OCS Hardware Enrichment
+
+## CPU
+
+* Extracted core count from raw string
+* Normalized architecture (`x86`, `x64`)
+
+## RAM
+
+* Converted MB → GB
+* Created tiers:
+
+  * `invalid_or_legacy`
+  * `low`
+  * `medium`
+  * `high`
+
+## Drives
+
+* Computed:
+
+  * `total_gb`, `used_gb`, `free_gb`
+  * `usage_ratio`
+* Classified:
+
+  * `disk`, `cdrom`, `removable`
+* Added:
+
+  * `disk_risk_level` 🚨
+
+## BIOS
+
+* Cleaned serial numbers
+* Parsed multiple date formats
+* Computed:
+
+  * `bios_age_years`
 
 ---
 
-## 🧪 Data Quality Testing
+# ⚡ Activity Classification
 
-We implemented both **schema tests** and **custom business tests**.
-
----
-
-### ✅ Schema Tests
-
-* `ticket_pk` → unique, not null
-* `created_at` → not null
-* `status` → not null
-* `source_year` → accepted values (2013–2015)
-* `is_deleted` → accepted values (0,1)
-
----
-
-### ✅ Business Logic Tests
-
-#### 1. Date Consistency
+Instead of static rules, we used:
 
 ```sql
-solved_at < created_at OR closed_at < created_at
+NTILE(3) OVER (ORDER BY LASTDATE DESC)
 ```
 
+### Result:
+
+* `active`
+* `inactive`
+* `stale`
+
+👉 Ensures balanced distribution even on compressed datasets
+
 ---
 
-#### 2. Non-negative Durations
+# 🧪 Data Quality Testing
 
-```sql
-waiting_duration < 0
+We implemented a **multi-level testing strategy**.
+
+---
+
+## ✅ Schema Tests
+
+* Primary keys → `unique`, `not_null`
+* Controlled values → `accepted_values`
+* Critical fields → `not_null`
+
+---
+
+## ✅ Data Quality Tests
+
+* No negative values
+* Valid date ranges
+* Clean text fields
+* Consistent calculations
+
+---
+
+## ✅ Business Logic Tests
+
+### Tickets
+
+* `solved_at >= created_at`
+* Non-negative durations
+
+### Hardware
+
+* CPU cores > 0
+* RAM consistency
+* OS classification validity
+
+### Drives
+
+* Usage ratio between 0–1
+* Storage consistency
+* Risk level correctness
+
+---
+
+## ⚠️ Important Principle
+
+Not all anomalies are errors.
+
+Example:
+
+* Duplicate devices in OCS → **expected**
+* Marked as `WARN`, not `FAIL`
+
+---
+
+# ⚠️ Issues & Solutions
+
+| Issue                       | Cause             | Solution          |
+| --------------------------- | ----------------- | ----------------- |
+| Duplicate IDs               | Multi-year data   | Composite PK      |
+| Invalid dates               | Dirty data        | Nullification     |
+| MySQL errors (`0000-00-00`) | Bad datetime      | Safe handling     |
+| Duplicate devices           | Multiple scans    | Handled later     |
+| OS inconsistencies          | Multilingual data | Flexible matching |
+
+---
+
+# ⚙️ Materialization Strategy
+
+All staging models are:
+
 ```
-
----
-
-#### 3. Delay Validity
-
-```sql
-close_delay_stat < 0
-OR solve_delay_stat < 0
-OR takeintoaccount_delay_stat < 0
+materialized = view
 ```
-
----
-
-#### 4. Deleted Flag Integrity
-
-```sql
-is_deleted NOT IN (0,1)
-```
-
----
-
-#### 5. Missing Critical Fields
-
-```sql
-created_at IS NULL OR ticket_id IS NULL
-```
-
----
-
-#### 6. Duplicate Tickets per Year
-
-```sql
-GROUP BY source_year, ticket_id HAVING COUNT(*) > 1
-```
-
----
-
-## ⚠️ Issues Faced & Fixes
-
-| Issue                        | Cause                            | Solution                        |
-| ---------------------------- | -------------------------------- | ------------------------------- |
-| MySQL error with `TIMESTAMP` | Unsupported syntax               | Used `DATETIME` or raw fields   |
-| `source_year` missing        | Not present in base model        | Replaced with `year`            |
-| Duplicate IDs across years   | Same ticket IDs in different DBs | Created composite PK            |
-| Invalid dates                | Dirty GLPI data                  | Nullified inconsistent values   |
-| Failing dbt test             | Real data anomaly                | Fixed logic instead of ignoring |
-| created_ad after solved_ad   | Dirty GLPI data                  | Fixed logic                     |
----
-
-## ⚙️ Materialization Strategy
-
-* Staging models are **materialized as views**
 
 ### Why?
 
-* Always reflect latest data
-* Avoid unnecessary storage
-* Not intended for direct BI querying
-* Lightweight and reusable
+* Always up-to-date
+* No storage overhead
+* Lightweight
+* Not intended for direct BI
 
 ---
 
-## 🧠 Key Design Principles
+# 🧠 Design Principles
 
-* ❌ No aggregations
+### ❌ Avoid:
 
-* ❌ No filtering (e.g., last 30 days)
+* Aggregations
+* KPIs
+* Filtering
 
-* ❌ No business KPIs
+### ✅ Focus on:
 
-* ✅ Clean, atomic, reusable data
-
-* ✅ Data quality enforced early
-
-* ✅ Ready for downstream modeling
+* Atomic data
+* Consistency
+* Reusability
+* Early validation
 
 ---
 
-## 🚀 Next Steps
+# 🧩 Output
 
-After staging:
+The staging layer produces:
+
+* Clean GLPI datasets (tickets, users, logs…)
+* Clean OCS datasets (hardware, drives, BIOS…)
+* Unified structure across years
+* Feature-ready data
+
+---
+
+# 🚀 Next Steps
 
 ```
-stg_glpi_tickets
-      ↓
-fct_tickets (durations, SLA, KPIs)
-      ↓
-ml_features (AI / risk prediction)
+stg_*
+   ↓
+int_* (feature engineering)
+   ↓
+dim_devices / fct_tickets
+   ↓
+ML models
 ```
 
 ---
 
-## 💡 Final Insight
+# 💡 Final Insight
 
-The staging layer is not just about cleaning data —
-it is where **data reliability is guaranteed**.
+The staging layer is not just preprocessing.
 
-Fixing issues here ensures:
+> It is where **data trust is established**.
 
-* Accurate dashboards
+A strong staging layer guarantees:
+
 * Reliable analytics
+* Accurate dashboards
 * Trustworthy AI models
-
----
