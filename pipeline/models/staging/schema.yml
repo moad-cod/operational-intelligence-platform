@@ -370,3 +370,39 @@ models:
           - not_null
           - accepted_values:
               values: ['2013','2014','2015']
+
+  - name: stg_ocs_bios
+    description: "Cleaned BIOS/device data with normalized attributes and parsed dates"
+
+    columns:
+
+      - name: bios_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: system_manufacturer
+        tests:
+          - not_null
+
+      - name: device_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['desktop','laptop','other']
+
+      - name: manufacturer_group
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['HP','Dell','Lenovo','Foxconn','MSI','Other']
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013','2014','2015']
