@@ -26,12 +26,22 @@ SELECT
         ELSE personal_token_date
     END AS personal_token_date,
 
-    -- 🔥 system flag
+    -- system flag
     CASE 
-        WHEN name LIKE '%$%' THEN 1
-        WHEN LOWER(name) IN ('glpi','post-only','tech','normal','administrateur') THEN 1
-        ELSE 0
-    END AS is_system_user,
+        WHEN name LIKE '%$%' THEN 'SYSTEM'
+        WHEN LOWER(name) IN ('glpi','post-only','tech','normal','administrateur') THEN 'SYSTEM'
+
+        WHEN LOWER(name) IN (
+            'hotlinedsic','standard','contact',
+            'centre.documentation','sgagadir','waliagadir'
+        ) THEN 'SERVICE'
+
+        WHEN LOWER(name) LIKE '%test%' THEN 'TEST'
+
+        WHEN name REGEXP '^[a-z]\\.' THEN 'HUMAN'
+
+        ELSE 'UNKNOWN'
+    END AS user_type,
 
     year AS source_year
 
