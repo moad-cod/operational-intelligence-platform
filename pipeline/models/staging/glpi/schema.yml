@@ -183,3 +183,43 @@ models:
           - not_null
           - accepted_values:
               values: ['2013', '2014', '2015']
+  
+  - name: int_ticket_features
+    description: "Aggregated ticket features from followups (activity, duration, signals)"
+
+    columns:
+
+      - name: ticket_id
+        tests:
+          - not_null
+          - unique
+
+      - name: followup_count
+        tests:
+          - not_null
+
+      - name: first_activity
+        tests:
+          - not_null
+
+      - name: last_activity
+        tests:
+          - not_null
+
+      - name: duration_days
+        tests:
+          - not_null
+
+      - name: positive_signals
+        tests:
+          - not_null
+
+      - name: negative_signals
+        tests:
+          - not_null
+
+      - name: is_resolved_flag
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
