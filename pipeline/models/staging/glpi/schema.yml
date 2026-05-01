@@ -290,3 +290,41 @@ models:
           - not_null
           - accepted_values:
               values: ['2013', '2014', '2015']
+  
+  - name: stg_glpi_devicememories
+    description: "Cleaned RAM data with extracted features (type, ECC, frequency, size, performance)"
+
+    columns:
+
+      - name: memory_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: memory_id
+        tests:
+          - not_null
+
+      - name: memory_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['DDR3','DDR2','DDR','SDRAM','RDRAM','FLASH','Other']
+
+      - name: is_ecc
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['low','medium','high','unknown']
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013','2014','2015']
