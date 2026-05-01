@@ -255,3 +255,38 @@ models:
           - not_null
           - accepted_values:
               values: ['SYSTEM', 'SERVICE', 'HUMAN', 'TEST', 'UNKNOWN']
+  
+  - name: stg_glpi_deviceprocessors
+    description: "Cleaned processor reference with extracted CPU features"
+
+    columns:
+
+      - name: processor_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: processor_id
+        tests:
+          - not_null
+
+      - name: cpu_family
+        tests:
+          - not_null
+
+      - name: architecture
+        tests:
+          - accepted_values:
+              values: ['x86', 'x64', 'unknown']
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['low', 'medium', 'high', 'unknown']
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2013', '2014', '2015']
