@@ -19,3 +19,27 @@ models:
         tests:
           - accepted_values:
               values: [0,1]
+
+  - name: int_device_activity
+
+    columns:
+
+      - name: hardware_id
+        tests:
+          - not_null
+          - unique
+
+      - name: activity_score
+        tests:
+          - accepted_values:
+              values: [1,2,3]
+
+      - name: is_active_flag
+        tests:
+          - accepted_values:
+              values: [0,1]
+
+      - name: device_status
+        tests:
+          - accepted_values:
+              values: ['active','inactive','stale']
