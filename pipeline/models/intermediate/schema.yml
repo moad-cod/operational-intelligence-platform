@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: int_device_storage
+
+    columns:
+
+      - name: hardware_id
+        tests:
+          - not_null
+          - unique
+
+      - name: storage_risk_level
+        tests:
+          - accepted_values:
+              values: ['low','medium','high','unknown']
+
+      - name: critical_disk_flag
+        tests:
+          - accepted_values:
+              values: [0,1]
