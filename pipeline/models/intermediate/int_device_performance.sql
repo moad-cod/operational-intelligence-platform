@@ -85,6 +85,10 @@ gpu AS (
 
             WHEN vram_gb >= 2 THEN 'high'
             WHEN vram_gb >= 1 THEN 'medium'
+
+            WHEN vram_gb IS NULL AND gpu_type = 'dedicated' THEN 'medium'  -- 🔥 FIX
+            WHEN vram_gb IS NULL THEN 'low'
+
             ELSE 'low'
         END AS performance_tier,
 
