@@ -72,8 +72,11 @@ gpu AS (
 
             WHEN vram_gb >= 2 THEN 3
             WHEN vram_gb >= 1 THEN 2
-            WHEN vram_gb IS NULL AND gpu_type = 'dedicated' THEN 'medium'
-            ELSE 1
+
+            WHEN vram_gb IS NULL AND gpu_type = 'dedicated' THEN 2
+            WHEN vram_gb IS NULL THEN 1
+
+            ELSE 1   -- VERY IMPORTANT
         END AS performance_score,
 
         CASE 
