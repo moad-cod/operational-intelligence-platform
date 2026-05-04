@@ -7,7 +7,7 @@ WITH base AS (
 )
 
 SELECT f.*
-FROM {{ ref('int_ticket_features') }} f
+FROM {{ ref('stg_ticket_features') }} f
 JOIN base b
     ON f.ticket_id = b.ticket_id
 WHERE f.followup_count != b.real_count
