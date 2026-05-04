@@ -43,3 +43,34 @@ models:
         tests:
           - accepted_values:
               values: ['active','inactive','stale']
+
+  - name: int_ticket_features
+
+    columns:
+
+      - name: ticket_id
+        tests:
+          - not_null
+          - unique
+
+      - name: followup_count
+        tests:
+          - not_null
+
+      - name: duration_days
+        tests:
+          - not_null
+
+      - name: is_resolved_flag
+        tests:
+          - accepted_values:
+              values: [0,1]
+
+      - name: is_deleted
+        tests:
+          - accepted_values:
+              values: [0,1]
+
+      - name: status
+        tests:
+          - not_null
