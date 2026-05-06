@@ -2,7 +2,7 @@
 
 The Intermediate (Silver) layer transforms clean, standardized data into meaningful, business-ready features.
 
-![Alt Text](DAG.png)
+![Alt Text](/pipeline/models/intermediate/DAG.png)
 It acts as a bridge between:
 
 🧼 Staging Layer → cleaned & standardized data
