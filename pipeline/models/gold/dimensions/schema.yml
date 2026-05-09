@@ -43,3 +43,44 @@ models:
         tests:
           - accepted_values:
               values: [0, 1]
+  
+  - name: dim_users
+
+    columns:
+
+      - name: user_id
+        tests:
+          - not_null
+          - unique
+
+      - name: ticket_followup_count
+        tests:
+          - not_null
+
+      - name: first_activity_at
+        tests:
+          - not_null
+
+      - name: last_activity_at
+        tests:
+          - not_null
+
+      - name: user_activity_level
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+                - very_high
+
+      - name: user_profile_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - standard_user
+                - active_user
+                - support_heavy
+                - power_user
