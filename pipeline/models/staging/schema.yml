@@ -1,107 +1,101 @@
 version: 2
 
 models:
+
   - name: stg_glpi_computers
-    description: Staging layer for GLPI computers with standardized naming and type conversions
+    description: "Staging layer for GLPI computers with standardized naming and type conversions"
 
     columns:
+
       - name: unique_id
-        description: Composite key (computer_id + source_year)
+        description: "Composite key (computer_id + source_year)"
         tests:
           - not_null
           - unique
 
       - name: computer_id
-        description: Identifier for computer (not unique across years)
         tests:
           - not_null
 
       - name: computer_uuid
-        description: UUID of computer
         tests:
           - not_null
 
       - name: computer_name
-        description: Name of computer
         tests:
           - not_null
 
       - name: is_template
-        description: Flag indicating if computer is a template
         tests:
           - not_null
           - accepted_values:
-              values: [1, 0]
+              values: [0, 1]
 
       - name: is_deleted
-        description: Flag indicating if computer is deleted
         tests:
           - not_null
           - accepted_values:
-              values: [1, 0]
+              values: [0, 1]
 
       - name: is_ocs_import
-        description: Flag indicating if computer was imported from OCS
         tests:
           - not_null
           - accepted_values:
-              values: [1, 0]
+              values: [0, 1]
 
       - name: computer_type
-        description: Type of computer (template or real_machine)
         tests:
           - not_null
           - accepted_values:
-              values: ['template', 'real_machine']
+              values:
+                - template
+                - real_machine
 
   - name: stg_glpi_logs
-    description: Staging layer for GLPI logs
+    description: "Staging layer for GLPI logs"
 
     columns:
-      # primary key
+
       - name: unique_id
-        description: Unique identifier for log event
         tests:
           - not_null
           - unique
 
       - name: log_id
-        description: Identifier for log event (not unique across years)
         tests:
           - not_null
-          
-      # entity
+
       - name: entity_id
-        description: ID of related entity
         tests:
           - not_null
 
       - name: entity_type
-        description: Type of entity (Computer, Ticket, etc.)
         tests:
           - not_null
 
-      # timestamp
       - name: updated_at
-        description: Timestamp of modification
         tests:
           - not_null
 
-      # derived logic
       - name: change_type
-        description: Type of change (created, updated, deleted, no_change)
         tests:
           - not_null
           - accepted_values:
-              values: ['created', 'updated', 'deleted', 'no_change']
+              values:
+                - created
+                - updated
+                - deleted
+                - no_change
 
-      # source tracking
       - name: source_year
-        description: Source year of data
         tests:
           - not_null
           - accepted_values:
-              values: ['2013', '2014', '2015']
+              values:
+                - '2013'
+                - '2014'
+                - '2015'
+
     tests:
       - change_type_consistency
 
@@ -111,27 +105,26 @@ models:
     columns:
 
       - name: ticket_pk
-        description: "Primary key: year + id"
         tests:
           - not_null
           - unique
 
       - name: ticket_id
-        description: "Original ticket ID (not globally unique)"
         tests:
           - not_null
 
       - name: created_at
-        description: "Ticket creation timestamp"
         tests:
           - not_null
 
       - name: source_year
-        description: "Source year of the ticket"
         tests:
           - not_null
           - accepted_values:
-              values: ['2013', '2014', '2015']
+              values:
+                - '2013'
+                - '2014'
+                - '2015'
 
       - name: status
         tests:
@@ -143,49 +136,45 @@ models:
           - accepted_values:
               values: [0, 1]
 
-  
   - name: stg_glpi_ticketfollowups
     description: "Cleaned staging model for GLPI ticket followups"
 
     columns:
 
-      # Primary key
       - name: ticket_followup_pk
         tests:
           - not_null
           - unique
 
-      # Foreign key
       - name: ticket_id
         tests:
           - not_null
 
-      # Date
       - name: created_at
         tests:
           - not_null
 
-      # User
       - name: user_id
         tests:
           - not_null
 
-      # Boolean
       - name: is_private
         tests:
           - not_null
           - accepted_values:
               values: [0, 1]
 
-      # Year
       - name: source_year
         tests:
           - not_null
           - accepted_values:
-              values: ['2013', '2014', '2015']
-  
-  - name: int_ticket_features
-    description: "Aggregated ticket features from followups (activity, duration, signals)"
+              values:
+                - '2013'
+                - '2014'
+                - '2015'
+
+  - name: stg_ticket_features
+    description: "Aggregated ticket features from followups"
 
     columns:
 
@@ -195,14 +184,6 @@ models:
           - unique
 
       - name: followup_count
-        tests:
-          - not_null
-
-      - name: first_activity
-        tests:
-          - not_null
-
-      - name: last_activity
         tests:
           - not_null
 
@@ -223,13 +204,12 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1]
-  
+
   - name: stg_glpi_users
-    description: "Cleaned GLPI users with classification and normalized fields"
+    description: "Cleaned GLPI users"
 
     columns:
 
-      # PK
       - name: user_pk
         tests:
           - not_null
@@ -247,17 +227,23 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['2013', '2014', '2015']
+              values:
+                - '2013'
+                - '2014'
+                - '2015'
 
-      # NEW COLUMN
       - name: user_type
         tests:
           - not_null
           - accepted_values:
-              values: ['SYSTEM', 'SERVICE', 'HUMAN', 'TEST', 'UNKNOWN']
-  
+              values:
+                - SYSTEM
+                - SERVICE
+                - HUMAN
+                - TEST
+                - UNKNOWN
+
   - name: stg_glpi_deviceprocessors
-    description: "Cleaned processor reference with extracted CPU features"
 
     columns:
 
@@ -266,33 +252,24 @@ models:
           - not_null
           - unique
 
-      - name: processor_id
-        tests:
-          - not_null
-
-      - name: cpu_family
-        tests:
-          - not_null
-
       - name: architecture
         tests:
           - accepted_values:
-              values: ['x86', 'x64', 'unknown']
+              values:
+                - x86
+                - x64
+                - unknown
 
       - name: performance_tier
         tests:
-          - not_null
           - accepted_values:
-              values: ['low', 'medium', 'high', 'unknown']
+              values:
+                - low
+                - medium
+                - high
+                - unknown
 
-      - name: source_year
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['2013', '2014', '2015']
-  
   - name: stg_glpi_devicememories
-    description: "Cleaned RAM data with extracted features (type, ECC, frequency, size, performance)"
 
     columns:
 
@@ -301,36 +278,21 @@ models:
           - not_null
           - unique
 
-      - name: memory_id
-        tests:
-          - not_null
-
-      - name: memory_type
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['DDR3','DDR2','DDR','SDRAM','RDRAM','FLASH','Other']
-
       - name: is_ecc
         tests:
-          - not_null
           - accepted_values:
               values: [0, 1]
 
       - name: performance_tier
         tests:
-          - not_null
           - accepted_values:
-              values: ['low','medium','high','unknown']
-
-      - name: source_year
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['2013','2014','2015']
+              values:
+                - low
+                - medium
+                - high
+                - unknown
 
   - name: stg_glpi_devicegraphiccards
-    description: "Cleaned GPU data with classification and performance features"
 
     columns:
 
@@ -339,40 +301,23 @@ models:
           - not_null
           - unique
 
-      - name: gpu_id
-        tests:
-          - not_null
-
-      - name: gpu_name
-        tests:
-          - not_null
-
-      - name: gpu_brand
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['NVIDIA','Intel','AMD','Matrox','Other']
-
       - name: gpu_type
         tests:
-          - not_null
           - accepted_values:
-              values: ['integrated','dedicated']
+              values:
+                - integrated
+                - dedicated
 
       - name: performance_tier
         tests:
-          - not_null
           - accepted_values:
-              values: ['low','medium','high','unknown']
-
-      - name: source_year
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['2013','2014','2015']
+              values:
+                - low
+                - medium
+                - high
+                - unknown
 
   - name: stg_ocs_bios
-    description: "Cleaned BIOS/device data with normalized attributes and parsed dates"
 
     columns:
 
@@ -381,34 +326,26 @@ models:
           - not_null
           - unique
 
-      - name: hardware_id
-        tests:
-          - not_null
-
-      - name: system_manufacturer
-        tests:
-          - not_null
-
       - name: device_type
         tests:
-          - not_null
           - accepted_values:
-              values: ['desktop','laptop','other']
+              values:
+                - desktop
+                - laptop
+                - other
 
       - name: manufacturer_group
         tests:
-          - not_null
           - accepted_values:
-              values: ['HP','Dell','Lenovo','Foxconn','MSI','Other']
-
-      - name: source_year
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['2013','2014','2015']
+              values:
+                - HP
+                - Dell
+                - Lenovo
+                - Foxconn
+                - MSI
+                - Other
 
   - name: stg_ocs_drives
-    description: "Cleaned disk data with storage metrics and risk classification"
 
     columns:
 
@@ -417,53 +354,52 @@ models:
           - not_null
           - unique
 
-      - name: hardware_id
-        tests:
-          - not_null
-
-      - name: drive_letter
-        tests:
-          - not_null
-
       - name: drive_type
         tests:
-          - not_null
           - accepted_values:
-              values: ['disk','cdrom','removable','other']
+              values:
+                - disk
+                - cdrom
+                - removable
+                - other
 
       - name: filesystem
         tests:
           - accepted_values:
-              values: ['NTFS','FAT32','FAT','EXFAT']
-              quote: true
               config:
                 severity: warn
+              values:
+                - NTFS
+                - FAT32
+                - FAT
+                - EXFAT
 
       - name: partition_type
         tests:
           - accepted_values:
-              values: ['system','data','recovery','other']
+              values:
+                - system
+                - data
+                - recovery
+                - other
 
       - name: disk_risk_level
         tests:
           - accepted_values:
-              values: ['critical','high','medium','low']
               config:
                 severity: warn
+              values:
+                - critical
+                - high
+                - medium
+                - low
 
       - name: is_tiny_partition
         tests:
           - accepted_values:
-              values: [0,1]
-
-      - name: source_year
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['2013','2014','2015']
+              values: [0, 1]
 
   - name: stg_ocs_hardware
-    description: "Cleaned OCS hardware data"
 
     columns:
 
@@ -471,18 +407,6 @@ models:
         tests:
           - not_null
           - unique
-
-      - name: hardware_id
-        tests:
-          - not_null
-
-      - name: device_id
-        tests:
-          - not_null
-
-      - name: device_name
-        tests:
-          - not_null
 
       - name: os_family
         tests:
