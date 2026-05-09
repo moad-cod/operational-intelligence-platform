@@ -1,6 +1,7 @@
 version: 2
 
 models:
+
   - name: int_device_storage
 
     columns:
@@ -13,12 +14,16 @@ models:
       - name: storage_risk_level
         tests:
           - accepted_values:
-              values: ['low','medium','high','unknown']
+              values:
+                - low
+                - medium
+                - high
+                - unknown
 
       - name: critical_disk_flag
         tests:
           - accepted_values:
-              values: [0,1]
+              values: [0, 1]
 
   - name: int_device_activity
 
@@ -32,17 +37,20 @@ models:
       - name: activity_score
         tests:
           - accepted_values:
-              values: [1,2,3]
+              values: [1, 2, 3]
 
       - name: is_active_flag
         tests:
           - accepted_values:
-              values: [0,1]
+              values: [0, 1]
 
       - name: device_status
         tests:
           - accepted_values:
-              values: ['active','inactive','stale']
+              values:
+                - active
+                - inactive
+                - stale
 
   - name: int_ticket_features
 
@@ -64,12 +72,12 @@ models:
       - name: is_resolved_flag
         tests:
           - accepted_values:
-              values: [0,1]
+              values: [0, 1]
 
       - name: is_deleted
         tests:
           - accepted_values:
-              values: [0,1]
+              values: [0, 1]
 
       - name: status
         tests:
@@ -87,7 +95,10 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['cpu', 'memory', 'gpu']
+              values:
+                - cpu
+                - memory
+                - gpu
 
       - name: performance_score
         tests:
@@ -97,4 +108,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['low', 'medium', 'high', 'unknown']
+              values:
+                - low
+                - medium
+                - high
+                - unknown

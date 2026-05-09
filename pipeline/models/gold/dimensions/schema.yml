@@ -1,6 +1,7 @@
 version: 2
 
 models:
+
   - name: dim_devices
 
     columns:
@@ -14,7 +15,10 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['active', 'inactive', 'stale']
+              values:
+                - active
+                - inactive
+                - stale
 
       - name: device_health_status
         tests:
@@ -38,4 +42,4 @@ models:
       - name: is_active_flag
         tests:
           - accepted_values:
-              values: [0,1]
+              values: [0, 1]
