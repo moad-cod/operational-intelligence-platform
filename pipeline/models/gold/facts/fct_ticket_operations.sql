@@ -15,25 +15,40 @@ WITH ticket_features AS (
 
 ),
 
+-- =========================================
+-- FIX DUPLICATED TICKETS
+-- =========================================
 ticket_operations AS (
 
-    SELECT
-        ticket_id,
+    SELECT *
+    FROM (
 
-        solved_at,
-        closed_at,
+        SELECT
+            ticket_id,
 
-        status,
-        is_deleted,
+            solved_at,
+            closed_at,
 
-        waiting_duration,
-        close_delay_stat,
-        solve_delay_stat,
-        takeintoaccount_delay_stat,
+            status,
+            is_deleted,
 
-        source_year
+            waiting_duration,
+            close_delay_stat,
+            solve_delay_stat,
+            takeintoaccount_delay_stat,
 
-    FROM {{ ref('stg_glpi_tickets') }}
+            source_year,
+
+            ROW_NUMBER() OVER (
+                PARTITION BY ticket_id
+                ORDER BY source_year DESC
+            ) AS rn
+
+        FROM {{ ref('stg_glpi_tickets') }}
+
+    ) t
+
+    WHERE rn = 1
 
 ),
 
@@ -67,14 +82,14 @@ combined AS (
         COALESCE(f.positive_signals, 0) AS positive_signals,
         COALESCE(f.negative_signals, 0) AS negative_signals,
 
+        -- =========================================
         -- FIXED RESOLUTION LOGIC
+        -- =========================================
         CASE
 
-            -- Real operational states
             WHEN LOWER(o.status) IN ('closed', 'solved')
             THEN 1
 
-            -- NLP fallback
             WHEN COALESCE(f.positive_signals, 0)
                  > COALESCE(f.negative_signals, 0)
             THEN 1
@@ -119,7 +134,9 @@ final AS (
 
         is_resolved_flag,
 
+        -- =========================================
         -- SLA RISK LOGIC
+        -- =========================================
         CASE
 
             WHEN is_resolved_flag = 0
@@ -140,7 +157,9 @@ final AS (
 
         END AS sla_risk_level,
 
-        -- IMPROVED COMPLEXITY LOGIC
+        -- =========================================
+        -- COMPLEXITY LOGIC
+        -- =========================================
         CASE
 
             WHEN followup_count >= 20
@@ -159,7 +178,9 @@ final AS (
 
         END AS ticket_complexity_level,
 
-        -- IMPROVED SUPPORT EFFICIENCY
+        -- =========================================
+        -- SUPPORT EFFICIENCY
+        -- =========================================
         CASE
 
             WHEN is_resolved_flag = 0
@@ -184,4 +205,5 @@ final AS (
 
 )
 
-SELECT * FROM final
+SELECT *
+FROM final
