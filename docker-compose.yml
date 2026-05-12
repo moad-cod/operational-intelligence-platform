@@ -1,18 +1,75 @@
 services:
+
   mysql_source:
     image: mysql:8.0
-    container_name: glpi_ocs_db
+
+    container_name: test_db
+
     environment:
       MYSQL_ROOT_PASSWORD: secret_root
       MYSQL_USER: glpi
       MYSQL_PASSWORD: secret
+
     ports:
       - "3307:3306"
+
     volumes:
-      # Map your local sql files to the entrypoint directory
       - ./source_db_init:/docker-entrypoint-initdb.d
+
     networks:
       - pfe_network
+
+
+  airflow:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+
+    container_name: airflow_pfe
+
+    user: "50000:0"
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__CORE__FERNET_KEY: "oH6Lh9xvR8m6Yz8vJzj5L2Y4xF4vT9Q3P2W7K1N6M8A="
+
+      AIRFLOW__WEBSERVER__SECRET_KEY: "airflow_secret_key"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/scripts:/opt/airflow/scripts
+      - ./airflow/data:/opt/airflow/data
+
+    depends_on:
+      - mysql_source
+
+    
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create \
+      -u admin \
+      -p admin \
+      -f admin \
+      -l admin \
+      -r Admin \
+      -e admin@example.com || true &&
+      airflow scheduler & exec airflow webserver
+      "
+
+
+    networks:
+      - pfe_network
+
+
+
 
 networks:
   pfe_network:
