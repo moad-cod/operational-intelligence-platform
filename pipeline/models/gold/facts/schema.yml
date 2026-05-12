@@ -1,0 +1,94 @@
+version: 2
+
+models:
+
+  - name: fct_ticket_operations
+    description: "Fact table containing ticket operational metrics, SLA intelligence, ticket complexity, and support efficiency indicators."
+
+    columns:
+
+      - name: ticket_id
+        description: "Unique ticket identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: status
+        description: "Current lifecycle status of the ticket"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - new
+                - assign
+                - plan
+                - waiting
+                - solved
+                - closed
+
+      - name: is_deleted
+        description: "Logical deletion flag"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: followup_count
+        description: "Number of followups associated with the ticket"
+        tests:
+          - not_null
+
+      - name: duration_days
+        description: "Ticket operational duration in days"
+        tests:
+          - not_null
+
+      - name: positive_signals
+        description: "Positive NLP indicators detected in followups"
+        tests:
+          - not_null
+
+      - name: negative_signals
+        description: "Negative NLP indicators detected in followups"
+        tests:
+          - not_null
+
+      - name: is_resolved_flag
+        description: "Derived ticket resolution indicator"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: sla_risk_level
+        description: "SLA operational risk category"
+        tests:
+          - accepted_values:
+              values:
+                - open
+                - low
+                - medium
+                - high
+                - critical
+
+      - name: ticket_complexity_level
+        description: "Estimated operational complexity"
+        tests:
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+
+      - name: support_efficiency
+        description: "Support performance classification"
+        tests:
+          - accepted_values:
+              values:
+                - unresolved
+                - poor
+                - moderate
+                - efficient
+
+      - name: source_year
+        description: "Source dataset year"
+        tests:
+          - not_null

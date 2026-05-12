@@ -43,7 +43,7 @@ models:
         tests:
           - accepted_values:
               values: [0, 1]
-  
+
   - name: dim_users
 
     columns:

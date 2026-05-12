@@ -1,115 +1,89 @@
 version: 2
-
 models:
-
   - name: int_device_storage
-
     columns:
-
       - name: hardware_id
         tests:
           - not_null
           - unique
-
       - name: storage_risk_level
         tests:
           - accepted_values:
               values:
-                - low
-                - medium
-                - high
-                - unknown
-
+                  - low
+                  - medium
+                  - high
+                  - unknown
       - name: critical_disk_flag
         tests:
           - accepted_values:
               values: [0, 1]
-
   - name: int_device_activity
-
     columns:
-
       - name: hardware_id
         tests:
           - not_null
           - unique
-
       - name: activity_score
         tests:
           - accepted_values:
               values: [1, 2, 3]
-
       - name: is_active_flag
         tests:
           - accepted_values:
               values: [0, 1]
-
       - name: device_status
         tests:
           - accepted_values:
               values:
-                - active
-                - inactive
-                - stale
-
+                  - active
+                  - inactive
+                  - stale
   - name: int_ticket_features
-
     columns:
-
       - name: ticket_id
         tests:
           - not_null
           - unique
-
       - name: followup_count
         tests:
           - not_null
-
       - name: duration_days
         tests:
           - not_null
-
       - name: is_resolved_flag
         tests:
           - accepted_values:
               values: [0, 1]
-
       - name: is_deleted
         tests:
           - accepted_values:
               values: [0, 1]
-
       - name: status
         tests:
           - not_null
-
   - name: int_device_performance
-
     columns:
-
       - name: component_id
         tests:
           - not_null
-
       - name: component_type
         tests:
           - not_null
           - accepted_values:
               values:
-                - cpu
-                - memory
-                - gpu
-
+                  - cpu
+                  - memory
+                  - gpu
       - name: performance_score
         tests:
           - not_null
-
       - name: performance_tier
         tests:
           - not_null
           - accepted_values:
               values:
-                - low
-                - medium
-                - high
-                - unknown
+                  - low
+                  - medium
+                  - high
+                  - unknown
