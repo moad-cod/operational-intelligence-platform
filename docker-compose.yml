@@ -1,74 +1,129 @@
 services:
 
-  mysql_source:
+  # ==========================================
+  # SOURCE DATABASES (MySQL - requis pour GLPI)
+  # ==========================================
+
+  platform_db:
     image: mysql:8.0
-
-    container_name: test_db
-
+    container_name: glpi_ocs_db
     environment:
       MYSQL_ROOT_PASSWORD: secret_root
-      MYSQL_USER: glpi
+      MYSQL_USER: mouad
       MYSQL_PASSWORD: secret
-
     ports:
       - "3307:3306"
-
     volumes:
       - ./source_db_init:/docker-entrypoint-initdb.d
-
     networks:
       - pfe_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
 
+
+  # ==========================================
+  # DATA WAREHOUSE (MySQL)
+  # ==========================================
+
+  warehouse_db:
+    image: mysql:8.0
+    container_name: warehouse_db
+    environment:
+      MYSQL_ROOT_PASSWORD: warehouse_root
+      MYSQL_DATABASE: it_data_warehouse
+      MYSQL_USER: warehouse
+      MYSQL_PASSWORD: warehouse_pass
+    ports:
+      - "3308:3306"
+    networks:
+      - pfe_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+
+  # ==========================================
+  # AIRFLOW METADATA DB (PostgreSQL)
+  # ==========================================
+
+  postgres:
+    image: postgres:15
+    container_name: airflow_postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pfe_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+
+  # ==========================================
+  # AIRFLOW
+  # ==========================================
 
   airflow:
     build:
       context: ./airflow
       dockerfile: Dockerfile
-
     container_name: airflow_pfe
-
     user: "50000:0"
-
     ports:
       - "8080:8080"
-
     environment:
-      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-
       AIRFLOW__CORE__FERNET_KEY: "oH6Lh9xvR8m6Yz8vJzj5L2Y4xF4vT9Q3P2W7K1N6M8A="
-
       AIRFLOW__WEBSERVER__SECRET_KEY: "airflow_secret_key"
-
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
-
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/scripts:/opt/airflow/scripts
       - ./airflow/data:/opt/airflow/data
-
+      - ./logs:/opt/airflow/logs
     depends_on:
-      - mysql_source
-
-    
-    command: >
-      bash -c "
-      airflow db migrate &&
-      airflow users create \
-      -u admin \
-      -p admin \
-      -f admin \
-      -l admin \
-      -r Admin \
-      -e admin@example.com || true &&
-      airflow scheduler & exec airflow webserver
-      "
-
-
+      postgres:
+        condition: service_healthy
+      platform_db:
+        condition: service_healthy
+      warehouse_db:
+        condition: service_healthy
+    command:
+      - bash
+      - -c
+      - |
+        echo '⏳ Migration DB...'
+        airflow db migrate
+        echo '✅ DB migrée'
+        echo '⏳ Création user admin...'
+        if airflow users list | grep -q admin; then
+          echo '⚠️ User admin existe déjà, suppression...'
+          airflow users delete --username admin
+        fi
+        airflow users create --username admin --password admin --firstname admin --lastname admin --role Admin --email admin@example.com
+        echo '✅ User admin créé !'
+        airflow scheduler &
+        exec airflow webserver
     networks:
       - pfe_network
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
 
+volumes:
+  postgres_data:
 
 
 networks:
