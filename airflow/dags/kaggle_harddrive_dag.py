@@ -7,7 +7,7 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
-    tags=['kaggle', 'bronze', 'mysql'],
+    tags=['kaggle', 'hardware', 'prediction'],
 ) as dag:
 
     run_ingestion = BashOperator(
