@@ -213,3 +213,79 @@ models:
           - accepted_values:
               values:
                 - GLPI
+  - name: stg_glpi_deviceprocessors
+
+    description: "Cleaned staging model for GLPI processors"
+
+    columns:
+
+      - name: processor_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: processor_id
+        tests:
+          - not_null
+
+      - name: cpu_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - i9
+                - i7
+                - i5
+                - i3
+                - Xeon
+                - Ryzen9
+                - Ryzen7
+                - Ryzen5
+                - Ryzen3
+                - Pentium
+                - Atom
+                - Core2Duo
+                - Other
+
+      - name: architecture
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - x64
+                - x86
+                - unknown
+
+      - name: has_frequency_data
+        tests:
+          - not_null
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: is_server_cpu
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
