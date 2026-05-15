@@ -6,12 +6,12 @@ import os
 # Configuration MySQL
 # -----------------------------
 
-MYSQL_USER = "mouad"
+MYSQL_USER = "glpi"
 MYSQL_PASSWORD = "secret"
-MYSQL_HOST = "it_data_warehouse"
+MYSQL_HOST = "test_db"
 MYSQL_PORT = "3306"
 
-DATABASE_NAME = "kaggle_raw_data"
+DATABASE_NAME = "kaggle_ds"
 
 # -----------------------------
 # Connexion DB kaggle_raw_data
