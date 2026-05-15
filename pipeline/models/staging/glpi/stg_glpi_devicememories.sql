@@ -1,78 +1,212 @@
 WITH source AS (
 
     SELECT *
-    FROM {{ ref('base_glpi_devicememories') }}
+
+    FROM {{ source('bronze', 'bronze_glpi_devicememories') }}
 
 ),
 
 base AS (
 
     SELECT
-        -- Composite PK
-        CONCAT(year, '_', id) AS memory_pk,
 
-        -- Keys
+        -- =====================================
+        -- PRIMARY KEY
+        -- =====================================
+
+        CONCAT(source_year, '_', id) AS memory_pk,
+
+        -- =====================================
+        -- IDENTIFIERS
+        -- =====================================
+
         id AS memory_id,
 
-        -- Raw text
         designation,
 
-        -- Memory type extraction
-        CASE 
+        -- =====================================
+        -- MEMORY TYPE
+        -- =====================================
+
+        CASE
+
+            WHEN designation LIKE '%DDR5%' THEN 'DDR5'
+
+            WHEN designation LIKE '%DDR4%' THEN 'DDR4'
+
             WHEN designation LIKE '%DDR3%' THEN 'DDR3'
+
             WHEN designation LIKE '%DDR2%' THEN 'DDR2'
+
             WHEN designation LIKE '%DDR%' THEN 'DDR'
+
             WHEN designation LIKE '%SDRAM%' THEN 'SDRAM'
+
             WHEN designation LIKE '%RDRAM%' THEN 'RDRAM'
+
             WHEN designation LIKE '%FLASH%' THEN 'FLASH'
+
             ELSE 'Other'
+
         END AS memory_type,
 
-        --  FIXED ECC detection (IMPORTANT)
-        CASE 
-            WHEN designation LIKE '%No ECC%' THEN 0
-            WHEN designation LIKE '%ECC%' THEN 1
-            ELSE 0
+        -- =====================================
+        -- ECC DETECTION
+        -- =====================================
+
+        CASE
+
+            WHEN designation LIKE '%No ECC%' THEN FALSE
+
+            WHEN designation LIKE '%ECC%' THEN TRUE
+
+            ELSE FALSE
+
         END AS is_ecc,
 
-        --  Clean frequency
-        CASE 
+        -- =====================================
+        -- FREQUENCY CLEANING
+        -- =====================================
+
+        CASE
+
             WHEN frequence IS NULL THEN NULL
+
             WHEN frequence = '0' THEN NULL
+
             WHEN CAST(frequence AS UNSIGNED) > 5000 THEN NULL
+
             ELSE CAST(frequence AS UNSIGNED)
+
         END AS frequency_mhz,
 
-        --  Convert size (MB → GB)
-        CASE 
-            WHEN specif_default IS NULL THEN NULL
-            WHEN specif_default = 0 THEN NULL
-            ELSE specif_default / 1024
-        END AS memory_size_gb,
+        -- =====================================
+        -- FREQUENCY QUALITY FLAG
+        -- =====================================
 
-        -- Metadata
-        year AS source_year
+        CASE
+
+            WHEN frequence IS NULL THEN FALSE
+
+            WHEN frequence = '0' THEN FALSE
+
+            ELSE TRUE
+
+        END AS has_frequency_data,
+
+        -- =====================================
+        -- MEMORY SIZE NORMALIZATION
+        -- =====================================
+
+        ROUND(
+
+            CASE
+
+                WHEN specif_default IS NULL THEN NULL
+
+                WHEN specif_default = 0 THEN NULL
+
+                ELSE specif_default / 1024
+
+            END,
+
+            2
+
+        ) AS memory_size_gb,
+
+        -- =====================================
+        -- METADATA
+        -- =====================================
+
+        source_year,
+
+        source_system
 
     FROM source
+
+),
+
+filtered AS (
+
+    SELECT *
+
+    FROM base
+
+    WHERE memory_type != 'FLASH'
 
 ),
 
 cleaned AS (
 
     SELECT
+
         *,
 
-        --  Performance tier (based on type + frequency)
-        CASE 
-            WHEN memory_type = 'DDR3' AND frequency_mhz >= 1333 THEN 'high'
-            WHEN memory_type = 'DDR3' THEN 'medium'
-            WHEN memory_type = 'DDR2' THEN 'low'
-            WHEN memory_type = 'DDR' THEN 'low'
-            ELSE 'unknown'
-        END AS performance_tier
+        -- =====================================
+        -- MEMORY CAPACITY TIER
+        -- =====================================
 
-    FROM base
+        CASE
+
+            WHEN memory_size_gb >= 16 THEN 'enterprise'
+
+            WHEN memory_size_gb >= 8 THEN 'high'
+
+            WHEN memory_size_gb >= 4 THEN 'medium'
+
+            WHEN memory_size_gb >= 1 THEN 'low'
+
+            ELSE 'legacy'
+
+        END AS memory_capacity_tier,
+
+        -- =====================================
+        -- PERFORMANCE TIER
+        -- =====================================
+
+        CASE
+
+            WHEN memory_type IN ('DDR5', 'DDR4')
+                 THEN 'high'
+
+            WHEN memory_type = 'DDR3'
+                 AND frequency_mhz >= 1333
+                 THEN 'high'
+
+            WHEN memory_type = 'DDR3'
+                 AND frequency_mhz IS NOT NULL
+                 THEN 'medium'
+
+            WHEN memory_type = 'DDR3'
+                 THEN 'unknown'
+
+            WHEN memory_type IN (
+                'DDR2',
+                'DDR',
+                'SDRAM',
+                'RDRAM'
+            ) THEN 'low'
+
+            ELSE 'unknown'
+
+        END AS performance_tier,
+
+        -- =====================================
+        -- SERVER MEMORY FLAG
+        -- =====================================
+
+        CASE
+
+            WHEN is_ecc = TRUE THEN TRUE
+
+            ELSE FALSE
+
+        END AS is_server_memory
+
+    FROM filtered
 
 )
 
-SELECT * FROM cleaned
+SELECT *
+
+FROM cleaned
