@@ -28,39 +28,13 @@ target_engine = create_engine(
 # =========================================
 
 tables = [
-
-    # =====================================
-    # CORE INVENTORY
-    # =====================================
-
     "hardware",
-
-    # =====================================
-    # SOFTWARE / SECURITY
-    # =====================================
-
     "software",
-
-    # =====================================
-    # STORAGE
-    # =====================================
-
     "drives",
-    "storages",
-
-    # =====================================
-    # MEMORY / BIOS
-    # =====================================
-
     "memories",
     "bios",
-
-    # =====================================
-    # NETWORK
-    # =====================================
-
-    "networks"
-
+    "networks",
+    "storages"
 ]
 
 # =========================================
@@ -86,27 +60,16 @@ for year in years:
             df = pd.read_sql(query, source_engine)
 
             # =================================
-            # EMPTY TABLE CHECK
-            # =================================
-
-            if df.empty:
-
-                print(f"⚠️ Table vide : {table} ({year})")
-
-                continue
-
-            # =================================
             # METADATA
             # =================================
 
             df["source_year"] = year
-
             df["source_system"] = "OCS"
 
             target_table = f"bronze_ocs_{table}"
 
             # =================================
-            # LOAD TO WAREHOUSE
+            # APPEND TO WAREHOUSE
             # =================================
 
             df.to_sql(
@@ -122,5 +85,4 @@ for year in years:
         except Exception as e:
 
             print(f"❌ Erreur {table} ({year})")
-
             print(e)

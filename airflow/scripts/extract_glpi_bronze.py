@@ -28,37 +28,13 @@ target_engine = create_engine(
 # =========================================
 
 tables = [
-
-    # =====================================
-    # TICKETS / NLP
-    # =====================================
-
     "glpi_tickets",
     "glpi_ticketfollowups",
     "glpi_itilcategories",
-    "glpi_logs",
-
-    # =====================================
-    # USERS
-    # =====================================
-
     "glpi_users",
-
-    # =====================================
-    # ASSETS
-    # =====================================
-
+    "glpi_logs",
     "glpi_computers",
     "glpi_infocoms",
-
-    # =====================================
-    # HARDWARE COMPONENTS
-    # =====================================
-
-    "glpi_deviceprocessors",
-    "glpi_devicememories",
-    "glpi_devicegraphiccards"
-
 ]
 
 # =========================================
@@ -88,13 +64,12 @@ for year in years:
             # =================================
 
             df["source_year"] = year
-
             df["source_system"] = "GLPI"
 
             target_table = f"bronze_{table}"
 
             # =================================
-            # LOAD TO BRONZE
+            # APPEND TO BRONZE
             # =================================
 
             df.to_sql(
@@ -110,5 +85,4 @@ for year in years:
         except Exception as e:
 
             print(f"❌ Erreur {table} ({year})")
-
             print(e)

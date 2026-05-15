@@ -6,12 +6,12 @@ import os
 # Configuration MySQL
 # -----------------------------
 
-MYSQL_USER = "glpi"
-MYSQL_PASSWORD = "secret"
-MYSQL_HOST = "test_db"
+MYSQL_USER = "warehouse"
+MYSQL_PASSWORD = "warehouse_pass"
+MYSQL_HOST = "warehouse_db"
 MYSQL_PORT = "3306"
 
-DATABASE_NAME = "kaggle_ds"
+DATABASE_NAME = "it_data_warehouse"
 
 # -----------------------------
 # Connexion MySQL
