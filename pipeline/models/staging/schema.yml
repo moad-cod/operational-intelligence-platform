@@ -63,3 +63,69 @@ models:
               values:
                 - template
                 - real_machine
+
+  - name: stg_glpi_devicegraphiccards
+
+    description: "Cleaned staging model for GLPI graphic cards"
+
+    columns:
+
+      - name: gpu_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: gpu_id
+        tests:
+          - not_null
+
+      - name: gpu_name
+        tests:
+          - not_null
+
+      - name: gpu_brand
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - NVIDIA
+                - Intel
+                - AMD
+                - Matrox
+                - Other
+
+      - name: gpu_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - integrated
+                - dedicated
+                - virtual
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+                - unknown
+                - virtual
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
