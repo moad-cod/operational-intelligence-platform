@@ -129,3 +129,87 @@ models:
           - accepted_values:
               values:
                 - GLPI
+  - name: stg_glpi_devicememories
+
+    description: "Cleaned staging model for GLPI memory devices"
+
+    columns:
+
+      - name: memory_pk
+        description: "Composite primary key using source year and memory id"
+        tests:
+          - not_null
+          - unique
+
+      - name: memory_id
+        tests:
+          - not_null
+
+      - name: designation
+
+      - name: memory_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - DDR5
+                - DDR4
+                - DDR3
+                - DDR2
+                - DDR
+                - SDRAM
+                - RDRAM
+                - Other
+
+      - name: is_ecc
+        tests:
+          - not_null
+
+      - name: frequency_mhz
+
+      - name: has_frequency_data
+        tests:
+          - not_null
+
+      - name: memory_size_gb
+
+      - name: memory_capacity_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - enterprise
+                - high
+                - medium
+                - low
+                - legacy
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: is_server_memory
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
