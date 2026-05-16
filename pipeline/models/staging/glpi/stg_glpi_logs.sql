@@ -1,56 +1,155 @@
 WITH source AS (
 
     SELECT *
-    FROM {{ ref('base_glpi_logs') }}
+
+    FROM {{ source('bronze', 'bronze_glpi_logs') }}
 
 ),
 
-renamed AS (
+normalized AS (
 
     SELECT
-        -- 🔑 identifiers
-        CONCAT(year, '_', id) AS unique_id,
-        
+
+        -- =====================================
+        -- PRIMARY KEY
+        -- =====================================
+
+        CONCAT(source_year, '_', id) AS unique_id,
+
         id AS log_id,
+
+        -- =====================================
+        -- ENTITY INFORMATION
+        -- =====================================
+
         items_id AS entity_id,
-        itemtype AS entity_type,
 
-        -- link info
-        itemtype_link AS linked_entity_type,
-        linked_action,
+        NULLIF(TRIM(itemtype), '') AS entity_type,
 
-        -- user
-        user_name,
+        -- =====================================
+        -- LINKED ENTITY
+        -- =====================================
 
-        -- time
+        NULLIF(TRIM(itemtype_link), '') AS linked_entity_type,
+
+        NULLIF(TRIM(linked_action), '') AS linked_action,
+
+        -- =====================================
+        -- USER INFORMATION
+        -- =====================================
+
+        NULLIF(TRIM(user_name), '') AS user_name,
+
+        CASE
+
+            WHEN user_name IS NULL THEN FALSE
+
+            WHEN TRIM(user_name) = '' THEN FALSE
+
+            ELSE TRUE
+
+        END AS has_user,
+
+        -- =====================================
+        -- TIMESTAMP
+        -- =====================================
+
         CAST(date_mod AS DATETIME) AS updated_at,
 
-        -- change tracking
+        -- =====================================
+        -- FIELD TRACKING
+        -- =====================================
+
         id_search_option AS field_id,
-        old_value,
-        new_value,
 
-        -- derived
+        -- =====================================
+        -- VALUE NORMALIZATION
+        -- =====================================
+
         CASE
-            WHEN (old_value IS NULL OR old_value = '') 
-                AND (new_value IS NOT NULL AND new_value != '') 
-                THEN 'created'
 
-            WHEN (old_value IS NOT NULL AND old_value != '') 
-                AND (new_value IS NULL OR new_value = '') 
-                THEN 'deleted'
+            WHEN old_value IS NULL THEN NULL
 
-            WHEN old_value != new_value 
-                THEN 'updated'
+            WHEN TRIM(old_value) IN ('', '-')
+                 THEN NULL
 
-            ELSE 'no_change'
-        END AS change_type,
+            ELSE TRIM(old_value)
 
-        -- source
-        year AS source_year
+        END AS old_value,
+
+        CASE
+
+            WHEN new_value IS NULL THEN NULL
+
+            WHEN TRIM(new_value) IN ('', '-')
+                 THEN NULL
+
+            ELSE TRIM(new_value)
+
+        END AS new_value,
+
+        source_year,
+
+        source_system
 
     FROM source
 
+),
+
+classified AS (
+
+    SELECT
+
+        *,
+
+        -- =====================================
+        -- CHANGE TYPE
+        -- =====================================
+
+        CASE
+
+            WHEN old_value IS NULL
+                 AND new_value IS NOT NULL
+                 THEN 'created'
+
+            WHEN old_value IS NOT NULL
+                 AND new_value IS NULL
+                 THEN 'deleted'
+
+            WHEN old_value IS NOT NULL
+                 AND new_value IS NOT NULL
+                 AND old_value != new_value
+                 THEN 'updated'
+
+            ELSE 'no_change'
+
+        END AS change_type,
+
+        -- =====================================
+        -- CHANGE FLAG
+        -- =====================================
+
+        CASE
+
+            WHEN old_value != new_value
+                 THEN TRUE
+
+            WHEN old_value IS NULL
+                 AND new_value IS NOT NULL
+                 THEN TRUE
+
+            WHEN old_value IS NOT NULL
+                 AND new_value IS NULL
+                 THEN TRUE
+
+            ELSE FALSE
+
+        END AS has_change
+
+    FROM normalized
+
 )
 
-SELECT * FROM renamed
+SELECT *
+
+FROM classified
