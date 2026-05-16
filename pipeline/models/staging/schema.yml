@@ -569,3 +569,85 @@ models:
           - accepted_values:
               values:
                 - GLPI
+
+  - name: stg_glpi_users
+
+    description: "Cleaned staging model for GLPI users"
+
+    columns:
+
+      - name: user_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: user_id
+        tests:
+          - not_null
+
+      - name: user_name
+
+      - name: normalized_username
+
+      - name: first_name
+
+      - name: last_name
+
+      - name: full_name
+
+      - name: user_dn
+
+      - name: has_directory_account
+        tests:
+          - not_null
+
+      - name: is_ldap_user
+        tests:
+          - not_null
+
+      - name: personal_token
+
+      - name: has_personal_token
+        tests:
+          - not_null
+
+      - name: personal_token_date
+
+      - name: user_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - SYSTEM
+                - SERVICE
+                - TEST
+                - HUMAN
+                - UNKNOWN
+
+      - name: has_username
+        tests:
+          - not_null
+
+      - name: has_real_identity
+        tests:
+          - not_null
+
+      - name: suspicious_account
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
