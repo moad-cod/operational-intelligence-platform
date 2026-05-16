@@ -1233,3 +1233,106 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_ocs_storages
+
+    description: "Cleaned staging model for OCS physical storage inventory"
+
+    columns:
+
+      - name: storage_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: storage_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: manufacturer
+
+      - name: manufacturer_group
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Seagate
+                - Western Digital
+                - Samsung
+                - Toshiba
+                - Kingston
+                - Intel
+                - Other
+
+      - name: storage_name
+
+      - name: storage_model
+
+      - name: storage_description
+
+      - name: storage_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - SSD
+                - NVMe
+                - HDD
+                - SATA
+                - SAS
+                - Other
+
+      - name: disk_size_gb
+
+      - name: storage_size_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: serial_number
+
+      - name: firmware_version
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_firmware
+        tests:
+          - not_null
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - ultra
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
