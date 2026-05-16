@@ -1,63 +1,163 @@
 WITH source AS (
 
     SELECT *
-    FROM {{ ref('base_glpi_ticketfollowups') }}
+
+    FROM {{ source('bronze', 'bronze_glpi_ticketfollowups') }}
 
 ),
 
 cleaned AS (
 
     SELECT
-        -- Composite PK
-        CONCAT(year, '_', id) AS ticket_followup_pk,
 
-        -- Business keys
+        -- =====================================
+        -- PRIMARY KEY
+        -- =====================================
+
+        CONCAT(source_year, '_', id) AS ticket_followup_pk,
+
+        -- =====================================
+        -- BUSINESS KEYS
+        -- =====================================
+
         id AS followup_id,
+
         tickets_id AS ticket_id,
 
-        -- Date
-        CASE 
+        -- =====================================
+        -- DATE
+        -- =====================================
+
+        CASE
+
             WHEN date IS NULL THEN NULL
-            WHEN CAST(date AS CHAR) = '0000-00-00 00:00:00' THEN NULL
-            ELSE date
+
+            WHEN CAST(date AS CHAR) = '0000-00-00 00:00:00'
+                 THEN NULL
+
+            ELSE CAST(date AS DATETIME)
+
         END AS created_at,
 
-        -- Dimensions
+        -- =====================================
+        -- DIMENSIONS
+        -- =====================================
+
         users_id AS user_id,
+
         requesttypes_id AS request_type_id,
 
-        -- Handle empty content HERE
-        CASE 
+        -- =====================================
+        -- CONTENT CLEANING
+        -- =====================================
+
+        CASE
+
             WHEN content IS NULL THEN NULL
 
-            -- Remove useless rows
             WHEN TRIM(
                 REPLACE(
-                    REPLACE(content, '&gt;', ''),
-                    '--', ''
+                    REPLACE(
+                        REPLACE(
+                            REPLACE(content, '&gt;', ''),
+                            '--',
+                            ''
+                        ),
+                        '&nbsp;',
+                        ''
+                    ),
+                    '<br />',
+                    ''
                 )
             ) = '' THEN NULL
 
-            ELSE
-                TRIM(
+            ELSE TRIM(
+                REPLACE(
                     REPLACE(
-                        REPLACE(content, '&gt;', ''),  -- decode html
-                        '--', ''                      -- remove prefixes
-                    )
+                        REPLACE(
+                            REPLACE(content, '&gt;', ''),
+                            '--',
+                            ''
+                        ),
+                        '&nbsp;',
+                        ''
+                    ),
+                    '<br />',
+                    ''
                 )
+            )
+
         END AS content,
 
-        -- Normalize boolean HERE
-        CASE 
-            WHEN is_private = 1 THEN 1
-            ELSE 0
+        -- =====================================
+        -- CONTENT QUALITY FLAGS
+        -- =====================================
+
+        CASE
+
+            WHEN content IS NULL THEN FALSE
+
+            WHEN LENGTH(TRIM(content)) < 5 THEN FALSE
+
+            ELSE TRUE
+
+        END AS has_meaningful_content,
+
+        CASE
+
+            WHEN content LIKE '%http%'
+                 THEN TRUE
+
+            ELSE FALSE
+
+        END AS contains_url,
+
+        CASE
+
+            WHEN content IS NULL THEN TRUE
+
+            WHEN LENGTH(TRIM(content)) < 5 THEN TRUE
+
+            ELSE FALSE
+
+        END AS is_system_generated,
+
+        -- =====================================
+        -- PRIVACY FLAG
+        -- =====================================
+
+        CASE
+
+            WHEN is_private = 1 THEN TRUE
+
+            ELSE FALSE
+
         END AS is_private,
 
-        -- Metadata
-        year AS source_year
+        -- =====================================
+        -- TEXT LENGTH
+        -- =====================================
+
+        CASE
+
+            WHEN content IS NULL THEN 0
+
+            ELSE LENGTH(content)
+
+        END AS content_length,
+
+        -- =====================================
+        -- SOURCE METADATA
+        -- =====================================
+
+        source_year,
+
+        source_system
 
     FROM source
 
 )
 
-SELECT * FROM cleaned
+SELECT *
+
+FROM cleaned
