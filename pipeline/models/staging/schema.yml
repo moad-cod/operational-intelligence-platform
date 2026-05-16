@@ -418,3 +418,62 @@ models:
           - accepted_values:
               values:
                 - GLPI
+
+  - name: stg_glpi_ticketfollowups
+
+    description: "Cleaned staging model for GLPI ticket followups"
+
+    columns:
+
+      - name: ticket_followup_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: followup_id
+        tests:
+          - not_null
+
+      - name: ticket_id
+        tests:
+          - not_null
+
+      - name: created_at
+
+      - name: user_id
+
+      - name: request_type_id
+
+      - name: content
+
+      - name: has_meaningful_content
+        tests:
+          - not_null
+
+      - name: contains_url
+        tests:
+          - not_null
+
+      - name: is_private
+        tests:
+          - not_null
+
+      - name: content_length
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
