@@ -1043,3 +1043,93 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_ocs_memories
+
+    description: "Cleaned staging model for OCS memory inventory"
+
+    columns:
+
+      - name: memory_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: memory_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: memory_caption
+
+      - name: memory_description
+
+      - name: capacity_gb
+
+      - name: memory_purpose
+
+      - name: memory_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - DDR5
+                - DDR4
+                - DDR3
+                - DDR2
+                - DDR
+                - SDRAM
+                - Other
+
+      - name: speed_mhz
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: num_slots
+
+      - name: serial_number
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_capacity
+        tests:
+          - not_null
+
+      - name: memory_size_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
