@@ -1336,3 +1336,105 @@ models:
           - accepted_values:
               values:
                 - OCS
+  - name: stg_ocs_software
+
+    description: "Cleaned staging model for OCS software inventory"
+
+    columns:
+
+      - name: software_pk
+        description: "Surrogate unique key for software inventory rows"
+        tests:
+          - not_null
+          - unique
+
+      - name: software_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: publisher
+
+      - name: software_name
+
+      - name: normalized_software_name
+
+      - name: software_version
+
+      - name: install_folder
+
+      - name: comments
+
+      - name: executable_name
+
+      - name: filesize_mb
+
+      - name: software_source
+
+      - name: software_guid
+
+      - name: software_language
+
+      - name: install_date
+
+      - name: architecture
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 64bit
+                - 32bit
+                - unknown
+
+      - name: software_category
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - office
+                - browser
+                - security
+                - database
+                - development
+                - virtualization
+                - other
+
+      - name: has_guid
+        tests:
+          - not_null
+
+      - name: has_version
+        tests:
+          - not_null
+
+      - name: has_install_date
+        tests:
+          - not_null
+
+      - name: software_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - normal
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
