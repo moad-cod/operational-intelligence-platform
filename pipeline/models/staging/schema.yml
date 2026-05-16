@@ -817,3 +817,81 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_ocs_drives
+
+    description: "Cleaned staging model for OCS storage drives"
+
+    columns:
+
+      - name: drive_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: drive_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: drive_letter
+
+      - name: drive_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - fixed
+                - removable
+                - usb
+                - network
+                - cdrom
+                - other
+
+      - name: filesystem
+
+      - name: total_size_gb
+
+      - name: free_size_gb
+
+      - name: num_files
+
+      - name: volume_label
+
+      - name: created_date
+
+      - name: used_percent
+
+      - name: storage_health
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - healthy
+                - unknown
+
+      - name: is_large_drive
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
