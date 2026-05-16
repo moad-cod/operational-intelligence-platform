@@ -1,108 +1,202 @@
 WITH source AS (
 
     SELECT *
-    FROM {{ ref('base_ocs_drives') }}
+
+    FROM {{ source('bronze', 'bronze_ocs_drives') }}
 
 ),
 
 cleaned AS (
 
     SELECT
-        -- Composite PK
-        CONCAT(year, '_', ID) AS drive_pk,
 
-        -- Keys
+        -- =====================================
+        -- PRIMARY KEY
+        -- =====================================
+
+        CONCAT(source_year, '_', ID) AS drive_pk,
+
+        -- =====================================
+        -- BUSINESS KEYS
+        -- =====================================
+
         ID AS drive_id,
+
         HARDWARE_ID AS hardware_id,
 
-        -- Normalize drive letter
-        REPLACE(TRIM(LETTER), '/', '') AS drive_letter,
+        -- =====================================
+        -- DRIVE LETTER
+        -- =====================================
 
-        -- Normalize drive type
-        CASE 
-            WHEN TYPE LIKE '%Hard%' THEN 'disk'
-            WHEN TYPE LIKE '%CD%' THEN 'cdrom'
-            WHEN TYPE LIKE '%Removable%' THEN 'removable'
+        CASE
+
+            WHEN LETTER IS NULL THEN NULL
+
+            WHEN TRIM(LETTER) = '' THEN NULL
+
+            ELSE UPPER(TRIM(LETTER))
+
+        END AS drive_letter,
+
+        -- =====================================
+        -- DRIVE TYPE
+        -- =====================================
+
+        CASE
+
+            WHEN LOWER(TYPE) LIKE '%fixed%'
+                 THEN 'fixed'
+
+            WHEN LOWER(TYPE) LIKE '%local%'
+                 THEN 'fixed'
+
+            WHEN LOWER(TYPE) LIKE '%removable%'
+                 THEN 'removable'
+
+            WHEN LOWER(TYPE) LIKE '%usb%'
+                 THEN 'usb'
+
+            WHEN LOWER(TYPE) LIKE '%network%'
+                 THEN 'network'
+
+            WHEN LOWER(TYPE) LIKE '%cd%'
+                 THEN 'cdrom'
+
+            WHEN LOWER(TYPE) LIKE '%dvd%'
+                 THEN 'cdrom'
+
             ELSE 'other'
+
         END AS drive_type,
 
-        -- Filesystem
-        CASE 
-            WHEN FILESYSTEM IS NULL OR TRIM(FILESYSTEM) = '' THEN NULL
+        -- =====================================
+        -- FILESYSTEM
+        -- =====================================
+
+        CASE
+
+            WHEN FILESYSTEM IS NULL THEN NULL
+
+            WHEN TRIM(FILESYSTEM) = '' THEN NULL
+
             ELSE UPPER(TRIM(FILESYSTEM))
+
         END AS filesystem,
 
-        -- Storage (MB → GB)
-        CASE 
-            WHEN TOTAL IS NULL OR TOTAL = 0 THEN NULL
+        -- =====================================
+        -- STORAGE CONVERSION
+        -- =====================================
+
+        CASE
+
+            WHEN TOTAL IS NULL THEN NULL
+
+            WHEN TOTAL <= 0 THEN NULL
+
             ELSE ROUND(TOTAL / 1024, 2)
-        END AS total_gb,
 
-        CASE 
-            WHEN TOTAL IS NULL OR TOTAL = 0 THEN NULL
+        END AS total_size_gb,
+
+        CASE
+
             WHEN FREE IS NULL THEN NULL
+
+            WHEN FREE < 0 THEN NULL
+
             ELSE ROUND(FREE / 1024, 2)
-        END AS free_gb,
 
-        CASE 
-            WHEN TOTAL > 0 AND FREE IS NOT NULL 
-                THEN ROUND((TOTAL - FREE) / 1024, 2)
-            ELSE NULL
-        END AS used_gb,
+        END AS free_size_gb,
 
-        CASE 
-            WHEN TOTAL > 0 AND FREE IS NOT NULL 
-                THEN ROUND((TOTAL - FREE) / TOTAL, 3)
-            ELSE NULL
-        END AS usage_ratio,
+        -- =====================================
+        -- FILE COUNT
+        -- =====================================
 
-        -- Volume label clean
-        CASE 
-            WHEN VOLUMN IS NULL THEN NULL
-            WHEN TRIM(VOLUMN) = '' THEN NULL
-            ELSE TRIM(VOLUMN)
-        END AS volume_label,
+        CASE
 
-        -- Improved partition classification
-        CASE 
-            -- FIRST: drive letter rule (strongest signal)
-            WHEN REPLACE(TRIM(LETTER), '/', '') = 'C:' THEN 'system'
+            WHEN NUMFILES < 0 THEN NULL
 
-            -- THEN label-based detection
-            WHEN LOWER(VOLUMN) LIKE '%system%' THEN 'system'
-            WHEN LOWER(VOLUMN) LIKE '%os%' THEN 'system'
-            WHEN LOWER(VOLUMN) LIKE '%win%' THEN 'system'
+            ELSE NUMFILES
 
-            WHEN LOWER(VOLUMN) LIKE '%data%' THEN 'data'
-            WHEN LOWER(VOLUMN) LIKE '%donne%' THEN 'data'
+        END AS num_files,
 
-            WHEN LOWER(VOLUMN) LIKE '%recovery%' THEN 'recovery'
-            WHEN LOWER(VOLUMN) LIKE '%recuper%' THEN 'recovery'
+        -- =====================================
+        -- VOLUME LABEL
+        -- =====================================
 
-            ELSE 'other'
-        END AS partition_type,
+        NULLIF(TRIM(VOLUMN), '') AS volume_label,
 
-        -- Disk risk level (VERY IMPORTANT)
-        CASE 
-            WHEN TOTAL > 0 AND FREE IS NOT NULL AND (TOTAL - FREE)/TOTAL >= 0.9 THEN 'critical'
-            WHEN TOTAL > 0 AND FREE IS NOT NULL AND (TOTAL - FREE)/TOTAL >= 0.75 THEN 'high'
-            WHEN TOTAL > 0 AND FREE IS NOT NULL AND (TOTAL - FREE)/TOTAL >= 0.5 THEN 'medium'
-            WHEN TOTAL > 0 AND FREE IS NOT NULL THEN 'low'
-            ELSE NULL
-        END AS disk_risk_level,
+        -- =====================================
+        -- DATE
+        -- =====================================
 
-        -- Tiny partition flag
-        CASE 
-            WHEN TOTAL > 0 AND (TOTAL / 1024) < 1 THEN 1
-            ELSE 0
-        END AS is_tiny_partition,
+        CREATEDATE AS created_date,
 
-        -- Metadata
-        year AS source_year
+        -- =====================================
+        -- STORAGE UTILIZATION
+        -- =====================================
+
+        CASE
+
+            WHEN TOTAL IS NULL THEN NULL
+
+            WHEN TOTAL <= 0 THEN NULL
+
+            WHEN FREE IS NULL THEN NULL
+
+            ELSE ROUND(
+                ((TOTAL - FREE) / TOTAL) * 100,
+                2
+            )
+
+        END AS used_percent,
+
+        -- =====================================
+        -- STORAGE STATUS
+        -- =====================================
+
+        CASE
+
+            WHEN TOTAL IS NULL THEN 'unknown'
+
+            WHEN FREE IS NULL THEN 'unknown'
+
+            WHEN ((TOTAL - FREE) / TOTAL) >= 0.90
+                 THEN 'critical'
+
+            WHEN ((TOTAL - FREE) / TOTAL) >= 0.75
+                 THEN 'high'
+
+            WHEN ((TOTAL - FREE) / TOTAL) >= 0.50
+                 THEN 'medium'
+
+            ELSE 'healthy'
+
+        END AS storage_health,
+
+        -- =====================================
+        -- LARGE DRIVE FLAG
+        -- =====================================
+
+        CASE
+
+            WHEN TOTAL >= 500000 THEN TRUE
+
+            ELSE FALSE
+
+        END AS is_large_drive,
+
+        -- =====================================
+        -- SOURCE METADATA
+        -- =====================================
+
+        source_year,
+
+        source_system
 
     FROM source
 
 )
 
 SELECT *
+
 FROM cleaned
