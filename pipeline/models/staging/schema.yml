@@ -651,3 +651,80 @@ models:
           - accepted_values:
               values:
                 - GLPI
+
+  - name: stg_glpi_itilcategories
+
+    description: "Cleaned staging model for GLPI ITIL ticket categories"
+
+    columns:
+
+      - name: itil_category_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: category_id
+        tests:
+          - not_null
+
+      - name: full_category_name
+
+      - name: category_name
+
+      - name: normalized_category_name
+
+      - name: parent_category_id
+
+      - name: level
+
+      - name: is_root_category
+        tests:
+          - not_null
+
+      - name: category_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - NETWORK
+                - HARDWARE
+                - SOFTWARE
+                - SECURITY
+                - PRINTER
+                - MAIL
+                - VPN
+                - OTHER
+
+      - name: is_visible_helpdesk
+        tests:
+          - not_null
+
+      - name: category_complexity
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: has_valid_name
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
