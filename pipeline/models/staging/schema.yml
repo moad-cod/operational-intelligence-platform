@@ -1133,3 +1133,103 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_ocs_networks
+
+    description: "Cleaned staging model for OCS network inventory"
+
+    columns:
+
+      - name: network_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: network_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: network_description
+
+      - name: network_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - ethernet
+                - wifi
+                - bluetooth
+                - loopback
+                - vpn
+                - other
+
+      - name: network_mib
+
+      - name: speed_mbps
+
+      - name: speed_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: mac_address
+
+      - name: connection_status
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - active
+                - inactive
+                - unknown
+
+      - name: ip_address
+
+      - name: ip_mask
+
+      - name: ip_gateway
+
+      - name: ip_subnet
+
+      - name: dhcp_server
+
+      - name: has_valid_ipv4
+        tests:
+          - not_null
+
+      - name: uses_dhcp
+        tests:
+          - not_null
+
+      - name: is_virtual_device
+        tests:
+          - not_null
+
+      - name: has_mac_address
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
