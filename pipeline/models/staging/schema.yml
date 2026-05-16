@@ -477,3 +477,95 @@ models:
           - accepted_values:
               values:
                 - GLPI
+
+  - name: stg_glpi_tickets
+
+    description: "Cleaned staging model for GLPI tickets"
+
+    columns:
+
+      - name: ticket_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: ticket_id
+        tests:
+          - not_null
+
+      - name: created_at
+
+      - name: solved_at
+
+      - name: closed_at
+
+      - name: status
+
+      - name: is_closed
+        tests:
+          - not_null
+
+      - name: is_resolved
+        tests:
+          - not_null
+
+      - name: is_waiting
+        tests:
+          - not_null
+
+      - name: is_deleted
+        tests:
+          - not_null
+
+      - name: resolution_time_hours
+
+      - name: closure_time_hours
+
+      - name: priority_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: urgency_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: impact_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
