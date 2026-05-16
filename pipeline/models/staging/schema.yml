@@ -895,3 +895,151 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_ocs_hardware
+
+    description: "Cleaned staging model for OCS hardware inventory"
+
+    columns:
+
+      - name: hardware_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: device_id
+
+      - name: hostname
+
+      - name: normalized_hostname
+
+      - name: workgroup
+
+      - name: user_domain
+
+      - name: current_user
+
+      - name: os_name
+
+      - name: os_version
+
+      - name: os_comments
+
+      - name: os_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Windows
+                - Linux
+                - MacOS
+                - Other
+
+      - name: processor_type
+
+      - name: cpu_packages
+
+      - name: cpu_cores
+
+      - name: memory_gb
+
+      - name: swap_gb
+
+      - name: memory_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - critical
+
+      - name: ip_address
+
+      - name: dns_name
+
+      - name: default_gateway
+
+      - name: ip_source
+
+      - name: has_valid_ipv4
+        tests:
+          - not_null
+
+      - name: inventory_time
+
+      - name: last_inventory_date
+
+      - name: last_seen_date
+
+      - name: inventory_quality
+
+      - name: inventory_fidelity
+
+      - name: inventory_quality_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - excellent
+                - good
+                - medium
+                - poor
+
+      - name: windows_company
+
+      - name: windows_owner
+
+      - name: windows_product_id
+
+      - name: has_windows_key
+        tests:
+          - not_null
+
+      - name: user_agent
+
+      - name: inventory_checksum
+
+      - name: system_state
+
+      - name: uuid
+
+      - name: architecture
+
+      - name: architecture_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 64bit
+                - 32bit
+                - unknown
+
+      - name: has_uuid
+        tests:
+          - not_null
+
+      - name: has_logged_user
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
