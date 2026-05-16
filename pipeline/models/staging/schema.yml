@@ -728,3 +728,92 @@ models:
           - accepted_values:
               values:
                 - GLPI
+
+  - name: stg_ocs_bios
+
+    description: "Cleaned staging model for OCS BIOS inventory"
+
+    columns:
+
+      - name: bios_pk
+        description: "Composite primary key using source year and hardware id"
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: system_manufacturer
+
+      - name: system_model
+
+      - name: serial_number
+
+      - name: device_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - desktop
+                - laptop
+                - server
+                - other
+
+      - name: bios_manufacturer
+
+      - name: bios_version
+
+      - name: bios_date
+
+      - name: asset_tag
+
+      - name: manufacturer_group
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - HP
+                - Dell
+                - Lenovo
+                - Foxconn
+                - MSI
+                - Other
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_bios_version
+        tests:
+          - not_null
+
+      - name: bios_age_years
+
+      - name: bios_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
