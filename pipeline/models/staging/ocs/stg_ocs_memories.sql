@@ -6,7 +6,7 @@ WITH source AS (
 
 ),
 
-cleaned AS (
+base AS (
 
     SELECT
 
@@ -15,10 +15,6 @@ cleaned AS (
         -- =====================================
 
         CONCAT(source_year, '_', ID) AS memory_pk,
-
-        -- =====================================
-        -- BUSINESS KEYS
-        -- =====================================
 
         ID AS memory_id,
 
@@ -43,23 +39,23 @@ cleaned AS (
             WHEN TRIM(CAPACITY) = '' THEN NULL
 
             WHEN CAST(CAPACITY AS UNSIGNED) = 0
-                THEN NULL
+                 THEN NULL
 
             -- Bytes
             WHEN CAST(CAPACITY AS UNSIGNED) > 1000000000
-                THEN ROUND(
+                 THEN ROUND(
                     CAST(CAPACITY AS UNSIGNED)
                     / 1024 / 1024 / 1024,
                     2
-                )
+                 )
 
             -- MB
             WHEN CAST(CAPACITY AS UNSIGNED) > 256
-                THEN ROUND(
+                 THEN ROUND(
                     CAST(CAPACITY AS UNSIGNED)
                     / 1024,
                     2
-                )
+                 )
 
             ELSE NULL
 
@@ -72,7 +68,7 @@ cleaned AS (
         NULLIF(TRIM(PURPOSE), '') AS memory_purpose,
 
         -- =====================================
-        -- MEMORY TYPE NORMALIZATION
+        -- MEMORY TYPE
         -- =====================================
 
         CASE
@@ -117,7 +113,7 @@ cleaned AS (
         END AS speed_mhz,
 
         -- =====================================
-        -- MEMORY PERFORMANCE
+        -- PERFORMANCE
         -- =====================================
 
         CASE
@@ -189,40 +185,43 @@ cleaned AS (
 
         END AS has_capacity,
 
-        -- =====================================
-        -- MEMORY SIZE TIER
-        -- =====================================
-
-        CASE
-
-            WHEN CAST(CAPACITY AS UNSIGNED)
-                 >= 17179869184
-                 THEN 'high'
-
-            WHEN CAST(CAPACITY AS UNSIGNED)
-                 >= 8589934592
-                 THEN 'medium'
-
-            WHEN CAST(CAPACITY AS UNSIGNED)
-                 > 0
-                 THEN 'low'
-
-            ELSE 'unknown'
-
-        END AS memory_size_tier,
-
-        -- =====================================
-        -- SOURCE METADATA
-        -- =====================================
-
         source_year,
 
         source_system
 
     FROM source
 
+),
+
+final AS (
+
+    SELECT
+
+        *,
+
+        -- =====================================
+        -- MEMORY SIZE TIER
+        -- =====================================
+
+        CASE
+
+            WHEN capacity_gb >= 16
+                 THEN 'high'
+
+            WHEN capacity_gb >= 8
+                 THEN 'medium'
+
+            WHEN capacity_gb > 0
+                 THEN 'low'
+
+            ELSE 'unknown'
+
+        END AS memory_size_tier
+
+    FROM base
+
 )
 
 SELECT *
 
-FROM cleaned
+FROM final
