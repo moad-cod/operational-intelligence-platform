@@ -1500,3 +1500,62 @@ models:
           - not_null
 
       - name: answer
+  - name: stg_cve_kaggle
+
+    description: "Cleaned cybersecurity CVE vulnerability staging dataset"
+
+    columns:
+
+      - name: cve_pk
+        description: "Unique surrogate key for CVE records"
+        tests:
+          - not_null
+          - unique
+
+      - name: original_index
+
+      - name: cwe_code
+
+      - name: cwe_name
+
+      - name: cve_summary
+
+      - name: published_at
+
+      - name: modified_at
+
+      - name: cvss_score
+
+      - name: severity_level
+        tests:
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: access_authentication
+
+      - name: access_complexity
+
+      - name: access_vector
+
+      - name: impact_availability
+
+      - name: impact_confidentiality
+
+      - name: impact_integrity
+
+      - name: is_remote_exploitable
+        tests:
+          - not_null
+
+      - name: is_critical
+        tests:
+          - not_null
+
+      - name: easy_to_exploit
+        tests:
+          - not_null
