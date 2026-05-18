@@ -26,11 +26,14 @@ Source Systems / Kaggle Datasets
 
 ## Pipeline DAGs
 
-| Source | DAG |
-|--------|-----|
-| GLPI   | `pipeline/models/staging/glpi/DAG.png` |
-| OCS    | `pipeline/models/staging/ocs/DAG.png` |
-| Kaggle | `pipeline/models/staging/kaggle/DAG.png` |
+**GLPI**
+![GLPI DAG](pipeline/models/staging/glpi/DAG.png)
+
+**OCS**
+![OCS DAG](pipeline/models/staging/ocs/DAG.png)
+
+**Kaggle**
+![Kaggle DAG](pipeline/models/staging/kaggle/DAG.png)
 
 ---
 
