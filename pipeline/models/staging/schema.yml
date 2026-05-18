@@ -1624,3 +1624,86 @@ models:
                 - failed
 
       - name: disk_risk_score
+
+  - name: stg_laptop_price_kaggle
+
+    description: "Cleaned laptop hardware and pricing dataset"
+
+    columns:
+
+      - name: laptop_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: laptop_id
+
+      - name: company
+
+      - name: product_name
+
+      - name: laptop_type
+
+      - name: screen_size_inches
+
+      - name: screen_resolution
+
+      - name: has_ips_panel
+        tests:
+          - not_null
+
+      - name: has_touchscreen
+        tests:
+          - not_null
+
+      - name: cpu_name
+
+      - name: cpu_family
+        tests:
+          - accepted_values:
+              values:
+                - i7
+                - i5
+                - i3
+                - ryzen7
+                - ryzen5
+                - celeron
+                - other
+
+      - name: ram_gb
+
+      - name: storage_configuration
+
+      - name: has_ssd
+        tests:
+          - not_null
+
+      - name: has_hdd
+        tests:
+          - not_null
+
+      - name: gpu_name
+
+      - name: gpu_brand
+        tests:
+          - accepted_values:
+              values:
+                - NVIDIA
+                - AMD
+                - Intel
+                - Other
+
+      - name: operating_system
+
+      - name: weight_kg
+
+      - name: price_euros
+
+      - name: price_segment
+        tests:
+          - accepted_values:
+              values:
+                - premium
+                - mid_range
+                - budget
+                - unknown
