@@ -1438,3 +1438,65 @@ models:
           - accepted_values:
               values:
                 - OCS
+
+  - name: stg_kaggle_tickets
+
+    description: "Unified multilingual customer support and NLP ticket dataset"
+
+    columns:
+
+      - name: unified_ticket_pk
+        description: "Surrogate unique key for unified tickets"
+        tests:
+          - not_null
+          - unique
+
+      - name: source_dataset
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - customer_support_tickets_200k
+                - dataset_tickets_multi_lang
+
+      - name: category
+
+      - name: ticket_subject
+
+      - name: ticket_body
+
+      - name: resolution_notes
+
+      - name: priority
+        tests:
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+                - critical
+                - urgent
+
+      - name: ticket_status
+
+      - name: language
+
+      - name: customer_email
+
+      - name: communication_channel
+
+      - name: operating_system
+
+      - name: browser
+
+      - name: issue_complexity_score
+
+      - name: is_escalated
+        tests:
+          - not_null
+
+      - name: is_sla_breached
+        tests:
+          - not_null
+
+      - name: answer
