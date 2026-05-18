@@ -1559,3 +1559,68 @@ models:
       - name: easy_to_exploit
         tests:
           - not_null
+  - name: stg_harddrive_kaggle
+
+    description: "Cleaned hard drive SMART monitoring and failure prediction dataset"
+
+    columns:
+
+      - name: harddrive_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: serial_number
+
+      - name: model_name
+
+      - name: snapshot_date
+
+      - name: capacity_gb
+
+      - name: has_failed
+        tests:
+          - not_null
+
+      - name: reallocated_sectors
+
+      - name: power_on_hours
+
+      - name: reported_uncorrectable_errors
+
+      - name: command_timeout
+
+      - name: current_pending_sector_count
+
+      - name: offline_uncorrectable
+
+      - name: udma_crc_errors
+
+      - name: temperature_celsius
+
+      - name: has_reallocated_sectors
+        tests:
+          - not_null
+
+      - name: has_pending_sectors
+        tests:
+          - not_null
+
+      - name: has_uncorrectable_sectors
+        tests:
+          - not_null
+
+      - name: has_crc_errors
+        tests:
+          - not_null
+
+      - name: health_status
+        tests:
+          - accepted_values:
+              values:
+                - healthy
+                - warning
+                - critical
+                - failed
+
+      - name: disk_risk_score
