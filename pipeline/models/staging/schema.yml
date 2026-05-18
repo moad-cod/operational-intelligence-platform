@@ -1707,3 +1707,72 @@ models:
                 - mid_range
                 - budget
                 - unknown
+
+  - name: stg_windows_eventlog_kaggle
+
+    description: "Cleaned Windows Event Log cybersecurity dataset"
+
+    columns:
+
+      - name: eventlog_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: original_index
+
+      - name: machine_name
+
+      - name: event_category
+
+      - name: entry_type
+
+      - name: event_message
+
+      - name: event_source
+
+      - name: generated_at
+
+      - name: country
+
+      - name: region_name
+
+      - name: city
+
+      - name: zip_code
+
+      - name: timezone
+
+      - name: isp
+
+      - name: severity_level
+        tests:
+          - accepted_values:
+              values:
+                - critical
+                - warning
+                - high
+                - audit
+                - informational
+
+      - name: suspicious_activity
+        tests:
+          - not_null
+
+      - name: is_error_event
+        tests:
+          - not_null
+
+      - name: is_warning_event
+        tests:
+          - not_null
+
+      - name: event_domain
+        tests:
+          - accepted_values:
+              values:
+                - security
+                - system
+                - application
+                - network
+                - other
