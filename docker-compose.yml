@@ -6,9 +6,7 @@ services:
 
   platform_db:
     image: mysql:8.0
-
-    container_name: test_db
-
+    container_name: glpi_ocs_db
     environment:
       MYSQL_ROOT_PASSWORD: secret_root
       MYSQL_USER: mouad

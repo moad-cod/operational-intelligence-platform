@@ -1,6 +1,6 @@
 SELECT *
 
-FROM {{ ref('stg_ocs_softwares') }}
+FROM {{ ref('stg_ocs_software') }}
 
 WHERE software_pk IS NULL
 
