@@ -39,7 +39,7 @@ tables = [
     # SOFTWARE / SECURITY
     # =====================================
 
-    "software",
+    "softwares",
 
     # =====================================
     # STORAGE
