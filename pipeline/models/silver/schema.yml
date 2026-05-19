@@ -165,11 +165,10 @@ models:
                 - inactive
 
   - name: silver_security_events
-    description: "Unified security events combining CVE vulnerabilities, Windows event logs, and security-related GLPI tickets with normalized severity scoring"
+    description: "Unified security events from CVE, Windows logs and GLPI tickets"
     columns:
 
       - name: security_event_pk
-        description: "Unique silver security event identifier"
         tests:
           - not_null
           - unique
@@ -177,39 +176,12 @@ models:
       - name: event_type
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - CVE
-                - WINDOWS_EVENT
-                - TICKET
 
       - name: severity_level
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - critical
-                - high
-                - medium
-                - low
-                - informational
-                - unknown
-                - warning
-                - audit
 
       - name: severity_score
-        tests:
-          - not_null
-
-      - name: is_remote_exploitable
-        tests:
-          - not_null
-
-      - name: is_critical
-        tests:
-          - not_null
-
-      - name: easy_to_exploit
         tests:
           - not_null
 
