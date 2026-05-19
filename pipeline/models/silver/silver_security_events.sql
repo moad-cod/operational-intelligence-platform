@@ -59,17 +59,17 @@ windows_events AS (
 security_tickets AS (
 
     SELECT
-        MD5(CONCAT('TICKET_SEC_', ticket_pk)) AS security_event_pk,
+        MD5(CONCAT('TICKET_SEC_', t.ticket_pk)) AS security_event_pk,
         'TICKET' AS event_type,
-        ticket_pk AS source_key,
+        t.ticket_pk AS source_key,
         NULL AS cwe_code,
         NULL AS cwe_name,
         NULL AS event_description,
-        created_at AS event_date,
-        closed_at AS updated_at,
+        t.created_at AS event_date,
+        t.closed_at AS updated_at,
         NULL AS cvss_score,
         CASE
-            WHEN priority_tier IN ('critical', 'high') THEN priority_tier
+            WHEN t.priority_tier IN ('critical', 'high') THEN t.priority_tier
             ELSE 'informational'
         END AS severity_level,
         NULL AS access_authentication,
@@ -79,57 +79,32 @@ security_tickets AS (
         NULL AS impact_confidentiality,
         NULL AS impact_integrity,
         FALSE AS is_remote_exploitable,
-        CASE WHEN priority_tier IN ('critical', 'high') THEN TRUE ELSE FALSE END AS is_critical,
+        CASE WHEN t.priority_tier IN ('critical', 'high') THEN TRUE ELSE FALSE END AS is_critical,
         FALSE AS easy_to_exploit,
         NULL AS machine_name,
         'GLPI' AS event_source,
         NULL AS country
     FROM {{ ref('stg_glpi_tickets') }} t
-    WHERE EXISTS (
-        SELECT 1
-        FROM {{ ref('stg_glpi_itilcategories') }} c
-        WHERE c.category_type IN ('SECURITY', 'VPN')
-    )
-
-),
-
-unified AS (
-
-    SELECT * FROM cve_events
-    UNION ALL
-    SELECT * FROM windows_events
-    UNION ALL
-    SELECT * FROM security_tickets
-
-),
-
-deduped AS (
-
-    SELECT
-        *,
-        ROW_NUMBER() OVER (
-            PARTITION BY security_event_pk
-            ORDER BY event_date DESC
-        ) AS rn
-    FROM unified
+    -- ✅ filter only critical/high tickets as proxy for security relevance
+    -- since there is no category FK in stg_glpi_tickets
+    WHERE t.priority_tier IN ('critical', 'high')
 
 )
 
+-- ✅ no deduped CTE — MD5 keys never collide across sources
 SELECT
     security_event_pk,
     event_type,
     event_date,
     COALESCE(updated_at, event_date) AS last_updated,
     severity_level,
-
     CASE
         WHEN severity_level = 'critical' THEN 5
-        WHEN severity_level = 'high' THEN 4
-        WHEN severity_level = 'medium' THEN 3
-        WHEN severity_level = 'low' THEN 2
+        WHEN severity_level = 'high'     THEN 4
+        WHEN severity_level = 'medium'   THEN 3
+        WHEN severity_level = 'low'      THEN 2
         ELSE 1
     END AS severity_score,
-
     event_description,
     cwe_code,
     cwe_name,
@@ -146,5 +121,10 @@ SELECT
     machine_name,
     event_source,
     country
-FROM deduped
-WHERE rn = 1
+FROM (
+    SELECT * FROM cve_events
+    UNION ALL
+    SELECT * FROM windows_events
+    UNION ALL
+    SELECT * FROM security_tickets
+) AS unified
