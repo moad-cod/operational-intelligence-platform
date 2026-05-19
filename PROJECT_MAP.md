@@ -10,7 +10,7 @@
 |---|---|---|
 | **Language** | Python 3.12 | `.python-version`; Airflow on 3.10 (Docker) |
 | **Orchestration** | Apache Airflow 2.7.1 | LocalExecutor; 8 DAGs (7 manual, 1 `@daily`) |
-| **Transformations** | dbt 1.7.19 | 22 staging views + 5 silver tables = 27 models |
+| **Transformations** | dbt 1.7.19 | 22 staging views + 5 silver views = 27 models |
 | **Warehouse** | MySQL 8.0 | `warehouse_db` service, database `it_data_warehouse` |
 | **Source DB** | MySQL 8.0 | `platform_db` service with GLPI/OCS historical dumps (2013–2015) |
 | **Airflow Metadata** | PostgreSQL 15 | `postgres` service |
@@ -45,9 +45,9 @@
             │
             ▼
  ┌──────────────────────┐
- │   SILVER LAYER       │  ← dbt SQL tables (materialized)
+ │   SILVER LAYER       │  ← dbt SQL views (materialized)
  │   (Cross-Domain      │    Cross-source integration, dedup,
- │    Integration)      │    business rules, feature engineering,
+ │   Integration)       │    business rules, feature engineering,
  │                      │    dashboard-ready datasets
  └──────────┬───────────┘
             │
@@ -178,10 +178,10 @@ etl/
 │   │       └── silver_user_activity.sql
 │   ├── tests/
 │   │   ├── staging/
-│   │   │   ├── glpi/               # 8 test files
-│   │   │   ├── ocs/                # 7 test files
-│   │   │   └── kaggle/             # ❌ Empty — no tests for any Kaggle model
-│   │   └── silver/                 # ✅ 8 custom silver tests
+│   │   │   ├── glpi/               # 10 test files (1 missing _test suffix)
+│   │   │   ├── ocs/                # 7 test files (1 with copy-paste bug)
+│   │   │   └── kaggle/             # 5 test files
+│   │   └── silver/                 # 8 custom silver tests
 │   │       ├── silver_tickets_priority_consistency.sql
 │   │       ├── silver_tickets_future_date_check.sql
 │   │       ├── silver_assets_os_family_consistency.sql
@@ -193,7 +193,7 @@ etl/
 │   ├── analyses/                   # Empty
 │   ├── seeds/                      # Empty
 │   ├── snapshots/                  # Empty
-│   ├── macros/                     # ❌ Missing — directory does not exist
+│   ├── macros/                     # Empty (contains only .gitkeep)
 │   ├── target/                     # Compiled dbt artifacts
 │   └── logs/                       # dbt run logs
 │
@@ -211,7 +211,7 @@ etl/
 
 - **Composite PKs**: `CONCAT(source_year, '_', id)` to deduplicate IDs across 2013–2015 sources
 - **Surrogate Keys**: MD5 for Kaggle/OCS software models; MD5(CONCAT('PREFIX_', pk)) for silver cross-source keys
-- **Materialization**: Staging as **views**, Silver as **tables** (for query performance)
+- **Materialization**: Staging as **views**, Silver configured as **views** (config in dbt_project.yml; can be changed to `table` for performance)
 - **Multi-Source Union**: `stg_kaggle_tickets` unions 2 heterogeneous CSV datasets with NULL padding
 - **Cross-Source Dedup**: `ROW_NUMBER() OVER (PARTITION BY business_key ORDER BY updated_at DESC)` in all silver models
 - **Derived Feature Scoring**: SLA risk (0–10), escalation probability (0–10), priority score (1–5) in silver_triage_features
@@ -296,7 +296,6 @@ etl/
 | Item | Location | Impact |
 |---|---|---|
 | **Gold Layer** (`mart_*`) | `pipeline/models/gold/` — does not exist | No aggregated KPIs or ML-ready feature sets |
-| **`macros/` directory** | `pipeline/macros/` — does not exist | Missing dbt project convention; needed for reusable SQL |
 | **`profiles.yml`** | Root or `~/.dbt/` — missing (gitignored) | Cannot run dbt without manual setup |
 
 ### 🔴 Test Issues
@@ -305,9 +304,9 @@ etl/
 |---|---|---|
 | **Duplicate PK test fails** | `stg_ocs_software` | `unique_stg_ocs_software_software_pk` fails: 41,885 duplicate rows — MD5 surrogate key is not unique |
 | **Column mismatch in schema** | `pipeline/models/staging/schema.yml` | Tests reference columns not produced by SQL models (e.g., `disk_risk_level`, `device_status`, `is_ecc`, `frequency_mhz`) → ~60 Database Errors |
-| **No Kaggle tests** | `pipeline/tests/staging/kaggle/` | Directory exists but contains zero test SQL files |
 | **Copy-paste bug** | `pipeline/tests/staging/ocs/stg_ocs_storages_test.sql` | `FROM {{ ref('stg_ocs_software') }}` — should reference `stg_ocs_storages` |
 | **Test file naming** | `pipeline/tests/staging/glpi/stg_glpi_computers.sql` | Missing `_test` suffix (all others follow `*_test.sql` convention) |
+| **dbt_project.yml silver config** | `pipeline/dbt_project.yml` | Silver is configured as `+materialized: view` but documentation says "tables" |
 
 ### 🧹 Code Quality / Technical Debt
 
@@ -335,7 +334,7 @@ etl/
 | Implement Gold/Mart models | High | Needed for analytics/ML use cases |
 | Verify silver models against live data | High | Not yet run against warehouse; schema.yml and tests need validation |
 | Fix dbt test failures (staging) | High | ~60 tests fail due to schema mismatches and duplicate PKs |
-| Add Kaggle staging tests | Medium | 5 models with zero test coverage |
+| Change silver materialization to `table` | Medium | Currently `view` in dbt_project.yml; tables would improve query performance |
 | Extract shared ingestion module | Medium | Reduce duplicate Kaggle code |
 | Move credentials to env/connections | Medium | Security best practice |
 | Add sentiment scoring to silver_tickets | Medium | Currently NULL — needs NLP integration from followup content |
