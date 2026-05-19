@@ -33,15 +33,18 @@ An IT department manages thousands of assets (computers, servers, peripherals) a
 
 - Build a centralized **Data Warehouse** (`it_data_warehouse`) that unifies all sources
 - Clean and standardize raw data through **dbt transformations**
-- Create **Silver Layer** datasets ready for Analytics, AI/ML, and Dashboard consumption
-- Future: Build Gold Layer for KPIs, predictions, and NLP-based triage
+- Build **Silver Layer** datasets ready for cross-domain analytics
+- Build **Gold Layer** serving ML-ready feature vectors for AI models
+- Deploy ML models: SLA breach prediction, asset anomaly detection, user behavior analysis
 
-### AI & Analytics Capabilities (Future)
+### AI & Analytics Capabilities
 
+- **SLA Breach Prediction** — Binary classification on `gold_sla_prediction_features` (XGBoost)
+- **Ticket Similarity Search** — Hybrid NLP (Kaggle) + structured (GLPI) via `gold_ticket_similarity`
+- **Asset Failure Risk** — Unsupervised anomaly detection on `gold_asset_failure_risk` (Isolation Forest)
+- **User Activity Anomalies** — Behavioral outlier detection on `gold_user_activity_anomalies` (Isolation Forest + LOF)
 - Predictive maintenance from hard drive SMART metrics + OCS inventory
-- Ticket auto-classification and sentiment analysis
 - Security event clustering from CVE + Windows event logs
-- Escalation prediction and SLA risk scoring (silver_triage_features)
 
 ---
 
@@ -74,8 +77,16 @@ An IT department manages thousands of assets (computers, servers, peripherals) a
             │
             ▼
  ┌──────────────────────┐
- │   GOLD LAYER         │  ← ❌ Not yet implemented
- │   (Business / ML)    │    Aggregated KPIs, ML features
+ │   GOLD LAYER         │  ← dbt tables (4 models)
+ │   (ML-Ready Serving) │    Feature vectors for ML models,
+ │                      │    one-row-per-entity, denormalized
+ └──────────┬───────────┘
+            │
+            ▼
+ ┌──────────────────────┐
+ │   ML PIPELINES       │  ← Python (outside dbt)
+ │   (XGBoost / IF /    │    Trains models, writes pred_* tables
+ │    sentence-transform)│    back to warehouse
  └──────────────────────┘
 ```
 
@@ -219,30 +230,62 @@ Cross-domain integration with business rules and feature engineering:
 | `silver_triage_features` | ML features from tickets | sla_risk_score, escalation_probability, triage_priority |
 | `silver_user_activity` | User activity audit trail | Suspicious activity flags, activity_category, user_type |
 
+### Gold Layer (4 dbt tables)
+
+ML-ready serving layer — one row per entity, denormalized for direct consumption:
+
+| Model | Purpose | ML Consumer | Key Outputs |
+|---|---|---|---|
+| `gold_sla_prediction_features` | SLA breach prediction dataset | XGBoost / LightGBM | priority_score, urgency_score, followup_count, was_sla_breached |
+| `gold_ticket_similarity` | Hybrid similarity (structured + NLP) | sentence-transformers + FAISS | text_corpus, priority_encoded, resolution_time_bucket, similarity_method |
+| `gold_asset_failure_risk` | Anomaly detection on asset features | Isolation Forest | device_age_years, high_risk_software_count, incident_count, rule_based_risk_score |
+| `gold_user_activity_anomalies` | Behavioral anomaly detection | Isolation Forest + LOF | total_activity_count, private_followup_ratio, activity_density, user_type_encoded |
+
+### ML Pipeline (Python, implements after dbt)
+
+```
+Gold tables → Python ML scripts → pred_* tables → Dashboard / API
+```
+
+| Step | Tool | Input | Output |
+|---|---|---|---|
+| Train SLA classifier | XGBoost / LightGBM | `gold_sla_prediction_features` | model_sla.pkl + pred_sla_breach table |
+| Build NLP embeddings | sentence-transformers | `gold_ticket_similarity.text_corpus` | FAISS index |
+| Train anomaly models | scikit-learn Isolation Forest | `gold_asset_failure_risk`, `gold_user_activity_anomalies` | model_if_asset.pkl, model_if_user.pkl |
+
+### Data Limitations (Gold Layer)
+
+| Limitation | Source | Impact |
+|---|---|---|
+| No ticket text for GLPI | stg_glpi_tickets | NLP not possible for GLPI — structured similarity only |
+| No login/authentication data | None in any source | Cannot compute login frequency, failed login ratio |
+| `is_suspicious_user` is heuristic | stg_glpi_users | Must NOT be used as ground truth label |
+| Data spans 2013–2015 only | Source DB dumps | Temporal drift may affect model relevance |
+
 ### Data Lineage
 
 ```
-Bronze Tables → Staging Views → Silver Views → (future) Gold
-                    │                │
-              22 staging SQL     5 silver SQL + 8 custom tests
-              + 1778 schema tests
+Bronze Tables → Staging Views → Silver Views → Gold Tables → ML Pipelines
+                    │                │              │
+              22 staging SQL     5 silver SQL    4 gold tables
+              + 1778 schema tests  + 8 silver tests  + gold schema tests
 ```
 
 ---
 
 ## 6. Dashboard Modules
 
-The Silver Layer is designed to directly feed 7 dashboard modules:
+The Silver + Gold Layers combine to feed 7 dashboard modules:
 
-| Module | Source | Dependency |
+| Module | Data Source | ML / Gold Dependency |
 |---|---|---|
-| **TriageFeed** | silver_tickets + silver_triage_features | — |
-| **SolutionRecommender** | silver_tickets (text fields) | Needs NLP embedding |
-| **AssetRiskTable** | silver_assets | — |
-| **SecurityClusters** | silver_security_events | Needs time-series aggregation |
-| **FailureQueue** | silver_triage_features (escalation_probability) | Needs threshold config |
-| **ActivityGraph** | silver_user_activity | — |
-| **UsageRadar** | silver_user_activity | Needs time aggregation |
+| **TriageFeed** | silver_tickets + silver_triage_features | gold_sla_prediction_features → SLA breach prediction |
+| **SolutionRecommender** | silver_tickets + gold_ticket_similarity | FAISS similarity search (Python) |
+| **AssetRiskTable** | silver_assets | gold_asset_failure_risk → anomaly scores |
+| **SecurityClusters** | silver_security_events | gold_asset_failure_risk (critical assets) |
+| **FailureQueue** | silver_triage_features | gold_sla_prediction_features (escalation risk) |
+| **ActivityGraph** | silver_user_activity | gold_user_activity_anomalies → behavioral scores |
+| **UsageRadar** | silver_user_activity | gold_user_activity_anomalies (activity density) |
 
 ---
 

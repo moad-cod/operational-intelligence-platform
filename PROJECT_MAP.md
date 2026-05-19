@@ -10,7 +10,8 @@
 |---|---|---|
 | **Language** | Python 3.12 | `.python-version`; Airflow on 3.10 (Docker) |
 | **Orchestration** | Apache Airflow 2.7.1 | LocalExecutor; 8 DAGs (7 manual, 1 `@daily`) |
-| **Transformations** | dbt 1.7.19 | 22 staging views + 5 silver views = 27 models |
+| **Transformations** | dbt 1.7.19 | 22 staging views + 5 silver views + 4 gold tables = 31 models |
+| **ML / AI** | scikit-learn (Isolation Forest, LOF) + XGBoost / LightGBM + sentence-transformers | Planned — Python notebooks outside dbt |
 | **Warehouse** | MySQL 8.0 | `warehouse_db` service, database `it_data_warehouse` |
 | **Source DB** | MySQL 8.0 | `platform_db` service with GLPI/OCS historical dumps (2013–2015) |
 | **Airflow Metadata** | PostgreSQL 15 | `postgres` service |
@@ -53,8 +54,10 @@
             │
             ▼
  ┌──────────────────────┐
- │   GOLD LAYER         │  ← ❌ NOT YET IMPLEMENTED (mart_*)
- │   (Business / ML)    │    Aggregated KPIs, ML features
+ │   GOLD LAYER         │  ← dbt SQL tables (materialized)
+ │   (ML-Ready Serving) │    Feature vectors for ML models,
+ │                      │    one-row-per-entity, denormalized
+ │                      │    for dashboard / API consumption
  └──────────────────────┘
 ```
 
@@ -117,7 +120,43 @@ stg_glpi_logs ──────────────────────
 stg_glpi_ticketfollowups ─────────────────────────┤──> silver_user_activity
 stg_ocs_hardware (logged_user) ───────────────────┘                  │
                                                                      │
-                                                      silver_tickets ──> silver_triage_features
+                                                       silver_tickets ──> silver_triage_features
+```
+
+### Gold Models Overview
+
+| Model | Sources | Purpose | ML Consumer | Key Outputs |
+|---|---|---|---|---|
+| **gold_sla_prediction_features** | `stg_glpi_tickets`, `stg_glpi_ticketfollowups`, `stg_kaggle_tickets` | ML-ready SLA breach prediction dataset | XGBoost / LightGBM classifier | priority_score, urgency_score, ticket_age_hours, followup_count, was_sla_breached (target) |
+| **gold_ticket_similarity** | `stg_glpi_tickets`, `stg_glpi_ticketfollowups`, `stg_kaggle_tickets` | Hybrid similarity: structured (GLPI) + NLP (Kaggle) | FAISS + sentence-transformers | text_corpus, priority_encoded, resolution_time_bucket, similarity_method |
+| **gold_asset_failure_risk** | OCS + GLPI (8 staging models) | Anomaly detection on asset features | Isolation Forest | device_age_years, high_risk_software_count, incident_count, rule_based_risk_score, anomaly_score |
+| **gold_user_activity_anomalies** | `stg_glpi_users`, `stg_glpi_logs`, `stg_glpi_ticketfollowups`, `stg_ocs_hardware` | Behavioral anomaly detection per user | Isolation Forest + LOF | total_activity_count, private_followup_ratio, write_action_ratio, activity_density |
+
+### Gold Layer Data Lineage
+
+```
+stg_glpi_tickets ────────────────────────────────────────────────────┐
+stg_glpi_ticketfollowups ────────────────────────────────────────────┤
+                                                                      ├──> gold_sla_prediction_features
+stg_kaggle_tickets ──────────────────────────────────────────────────┘
+                                 ────────────────────────────────────┐
+                                                                      ├──> gold_ticket_similarity
+                                                                      │
+stg_ocs_hardware ────────┐                                            │
+stg_ocs_bios ────────────┤                                            │
+stg_ocs_drives ──────────┤                                            │
+stg_ocs_storages ────────┤──> gold_asset_failure_risk                 │
+stg_ocs_software ────────┤                                            │
+stg_glpi_computers ──────┤                                            │
+stg_glpi_infocoms ───────┤                                            │
+stg_glpi_tickets ────────┘                                            │
+                                                                       ├──> ML Pipelines (Python)
+stg_glpi_ticketfollowups ──────────────────────────────────────────┐  │
+stg_glpi_logs ─────────────────────────────────────────────────────┤  │
+stg_glpi_users ────────────────────────────────────────────────────┤──> gold_user_activity_anomalies
+stg_ocs_hardware (logged_user) ───────────────────────────────────┘  │
+                                                                       │
+                                                                       └──> pred_* tables
 ```
 
 ---
@@ -169,13 +208,19 @@ etl/
 │   │   │   ├── glpi/               # 10 staging SQL models
 │   │   │   ├── ocs/                # 7 staging SQL models
 │   │   │   └── kaggle/             # 5 staging SQL models
-│   │   └── silver/                 # ✅ Silver Layer (5 models)
-│   │       ├── schema.yml          # Silver column tests & docs
-│   │       ├── silver_tickets.sql
-│   │       ├── silver_assets.sql
-│   │       ├── silver_security_events.sql
-│   │       ├── silver_triage_features.sql
-│   │       └── silver_user_activity.sql
+│   │   ├── silver/                 # ✅ Silver Layer (5 models)
+│   │   │   ├── schema.yml          # Silver column tests & docs
+│   │   │   ├── silver_tickets.sql
+│   │   │   ├── silver_assets.sql
+│   │   │   ├── silver_security_events.sql
+│   │   │   ├── silver_triage_features.sql
+│   │   │   └── silver_user_activity.sql
+│   │   └── gold/                   # ✅ Gold Layer (4 models)
+│   │       ├── schema.yml          # Gold column tests & docs
+│   │       ├── gold_sla_prediction_features.sql
+│   │       ├── gold_ticket_similarity.sql
+│   │       ├── gold_asset_failure_risk.sql
+│   │       └── gold_user_activity_anomalies.sql
 │   ├── tests/
 │   │   ├── staging/
 │   │   │   ├── glpi/               # 10 test files (1 missing _test suffix)
@@ -211,7 +256,7 @@ etl/
 
 - **Composite PKs**: `CONCAT(source_year, '_', id)` to deduplicate IDs across 2013–2015 sources
 - **Surrogate Keys**: MD5 for Kaggle/OCS software models; MD5(CONCAT('PREFIX_', pk)) for silver cross-source keys
-- **Materialization**: Staging as **views**, Silver configured as **views** (config in dbt_project.yml; can be changed to `table` for performance)
+- **Materialization**: Staging + Silver as **views**, Gold as **tables** (for serving performance)
 - **Multi-Source Union**: `stg_kaggle_tickets` unions 2 heterogeneous CSV datasets with NULL padding
 - **Cross-Source Dedup**: `ROW_NUMBER() OVER (PARTITION BY business_key ORDER BY updated_at DESC)` in all silver models
 - **Derived Feature Scoring**: SLA risk (0–10), escalation probability (0–10), priority score (1–5) in silver_triage_features
@@ -275,6 +320,78 @@ etl/
 | **Score validity** | 100% in range | Custom range checks (0–10, 1–5) |
 | **Date validity** | No future dates | Custom date checks |
 
+---
+
+## [GOLD ARCHITECTURE]
+
+### Design Principles
+
+1. **Serving Layer**: Gold is optimized for downstream consumption (dashboards, ML models, APIs), not for transformation
+2. **One Row Per Entity**: Each gold model has exactly one row per business entity (ticket, asset, user)
+3. **Denormalized**: All relevant features are in one table — no joins needed at query time
+4. **NULLs Are Meaningful**: Kaggle-only features are NULL for GLPI rows (documented, not imputed in SQL)
+5. **ML-Ready**: Features are numeric, encoded, and bounded — ready for scikit-learn / XGBoost
+6. **Baseline Comparison**: `rule_based_risk_score` kept alongside ML output for A/B comparison
+
+### ML Pipeline (Python, outside dbt)
+
+```
+Gold tables (dbt)
+    │
+    ▼
+Python ML scripts
+    │
+    ├── XGBoost / LightGBM  ──► gold_sla_prediction_features
+    ├── sentence-transformers ──► gold_ticket_similarity (NLP path)
+    ├── Isolation Forest      ──► gold_asset_failure_risk
+    └── Isolation Forest + LOF ──► gold_user_activity_anomalies
+    │
+    ▼
+pred_* tables (warehouse) ──► Dashboard / Triage Center API
+```
+
+### Model Registry
+
+| Model | Type | Gold Dataset | Status | Key Limitation |
+|---|---|---|---|---|
+| SLA Breach Prediction | Binary Classification | `gold_sla_prediction_features` | Built (needs ML) | GLPI missing complexity/tenure/escalation features |
+| Ticket Similarity | Hybrid NLP + Structured | `gold_ticket_similarity` | Built (needs ML) | GLPI has no text — structured fallback only |
+| Asset Failure Risk | Anomaly Detection | `gold_asset_failure_risk` | Built (needs ML) | No labeled failures — unsupervised |
+| User Activity Anomalies | Behavioral Anomaly Detection | `gold_user_activity_anomalies` | Built (needs ML) | No ground truth — weak heuristic only |
+
+### Data Limitations (Hard Constraints)
+
+| Limitation | Source | Impact |
+|---|---|---|
+| **No ticket text for GLPI** | `stg_glpi_tickets` | ticket_subject, ticket_body are NULL → NLP not possible for GLPI |
+| **No login/authentication data** | None exists in any source | Cannot compute login_frequency, failed_login_ratio, session metrics |
+| **No geolocation for users** | None exists | Cannot compute geo_variance or location changes |
+| **is_suspicious_user is heuristic** | `stg_glpi_users` | Must NOT be used as ground truth label |
+| **Data spans 2013–2015 only** | Source DB dumps | Temporal drift may affect model relevance |
+| **Follow-up text content not extracted** | `stg_glpi_ticketfollowups` | Only metadata (length, privacy flag) available |
+
+### Dashboard Mapping
+
+| Dashboard Component | Gold Model(s) | ML Dependency |
+|---|---|---|
+| **TriageFeed** | gold_sla_prediction_features | SLA breach prediction |
+| **SolutionRecommender** | gold_ticket_similarity | FAISS similarity search |
+| **AssetRiskTable** | gold_asset_failure_risk | Anomaly scores |
+| **SecurityClusters** | gold_asset_failure_risk (for critical assets) | — |
+| **FailureQueue** | gold_sla_prediction_features (escalation risk) | SLA prediction |
+| **ActivityGraph** | gold_user_activity_anomalies | Behavioral anomaly scores |
+| **UsageRadar** | gold_user_activity_anomalies | Activity density metrics |
+
+### Materialization
+
+All gold models: `materialized='table'` in `dbt_project.yml`
+
+```yaml
+gold:
+  +materialized: table
+  +schema: gold
+```
+
 ### Dashboard Mapping
 
 | Dashboard Component | Silver Model(s) | Gold Dependency |
@@ -295,7 +412,6 @@ etl/
 
 | Item | Location | Impact |
 |---|---|---|
-| **Gold Layer** (`mart_*`) | `pipeline/models/gold/` — does not exist | No aggregated KPIs or ML-ready feature sets |
 | **`profiles.yml`** | Root or `~/.dbt/` — missing (gitignored) | Cannot run dbt without manual setup |
 
 ### 🔴 Test Issues
@@ -331,10 +447,14 @@ etl/
 
 | Item | Priority | Notes |
 |---|---|---|
-| Implement Gold/Mart models | High | Needed for analytics/ML use cases |
+| Verify gold models against live data | High | Not yet run against warehouse; references stg_* models that need to exist |
 | Verify silver models against live data | High | Not yet run against warehouse; schema.yml and tests need validation |
 | Fix dbt test failures (staging) | High | ~60 tests fail due to schema mismatches and duplicate PKs |
+| Build Python ML pipeline | High | XGBoost + Isolation Forest + sentence-transformers outside dbt |
+| Implement pred_* prediction tables | High | Store model outputs back into warehouse for dashboard consumption |
+| Implement FAISS similarity index | Medium | NLP embedding + ANN search for gold_ticket_similarity |
 | Change silver materialization to `table` | Medium | Currently `view` in dbt_project.yml; tables would improve query performance |
+| Add gold-specific data loss tests | Medium | Row count parity: gold >= 80% of source staging row count |
 | Extract shared ingestion module | Medium | Reduce duplicate Kaggle code |
 | Move credentials to env/connections | Medium | Security best practice |
 | Add sentiment scoring to silver_tickets | Medium | Currently NULL — needs NLP integration from followup content |
