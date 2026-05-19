@@ -109,14 +109,20 @@ base AS (
 
             WHEN TRIM(BDATE) = '' THEN NULL
 
-            WHEN STR_TO_DATE(BDATE, '%d/%m/%Y') IS NOT NULL
+            WHEN BDATE NOT REGEXP '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'
+                 THEN NULL
+
+            WHEN CAST(SUBSTR(BDATE, 1, 2) AS UNSIGNED) > 12
+                 AND CAST(SUBSTR(BDATE, 4, 2) AS UNSIGNED) BETWEEN 1 AND 12
                  THEN STR_TO_DATE(BDATE, '%d/%m/%Y')
 
-            WHEN STR_TO_DATE(BDATE, '%m/%d/%Y') IS NOT NULL
+            WHEN CAST(SUBSTR(BDATE, 4, 2) AS UNSIGNED) > 12
+                 AND CAST(SUBSTR(BDATE, 1, 2) AS UNSIGNED) BETWEEN 1 AND 12
                  THEN STR_TO_DATE(BDATE, '%m/%d/%Y')
 
-            WHEN STR_TO_DATE(BDATE, '%Y-%m-%d') IS NOT NULL
-                 THEN STR_TO_DATE(BDATE, '%Y-%m-%d')
+            WHEN CAST(SUBSTR(BDATE, 1, 2) AS UNSIGNED) BETWEEN 1 AND 12
+                 AND CAST(SUBSTR(BDATE, 4, 2) AS UNSIGNED) BETWEEN 1 AND 12
+                 THEN STR_TO_DATE(BDATE, '%d/%m/%Y')
 
             ELSE NULL
 
