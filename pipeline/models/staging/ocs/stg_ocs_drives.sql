@@ -158,6 +158,8 @@ cleaned AS (
 
             WHEN TOTAL IS NULL THEN 'unknown'
 
+            WHEN TOTAL <= 0 THEN 'unknown'
+
             WHEN FREE IS NULL THEN 'unknown'
 
             WHEN ((TOTAL - FREE) / TOTAL) >= 0.90
