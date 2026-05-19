@@ -1,0 +1,289 @@
+version: 2
+
+models:
+
+  - name: gold_sla_prediction_features
+    description: >
+      ML classification dataset for SLA breach prediction.
+      Each row = one ticket from GLPI or Kaggle with derived SLA features.
+      Target variable: was_sla_breached (0/1).
+      Imputation note: GLPI rows have NULL complexity_score, tenure_months,
+      previous_tickets, is_escalated — impute with dataset medians or zero-fill
+      before training.
+    columns:
+
+      - name: sla_feature_pk
+        description: "Unique primary key for SLA prediction features"
+        tests:
+          - not_null
+          - unique
+
+      - name: source_ticket_pk
+        description: "Original ticket PK from source staging model"
+        tests:
+          - not_null
+
+      - name: source_system
+        description: "Source system: GLPI or Kaggle dataset name"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+                - customer_support_tickets_200k
+                - dataset_tickets_multi_lang
+
+      - name: ticket_id
+        tests:
+          - not_null
+
+      - name: priority_score
+        description: "Ordinal priority: 5=critical, 4=high, 3=medium, 2=low, 1=unknown"
+        tests:
+          - not_null
+
+      - name: urgency_score
+        description: "Ordinal urgency (GLPI only; NULL for Kaggle)"
+
+      - name: impact_score
+        description: "Ordinal impact (GLPI only; NULL for Kaggle)"
+
+      - name: ticket_age_hours
+        description: "Hours since creation (or until closure)"
+        tests:
+          - not_null
+
+      - name: was_sla_breached
+        description: "Target variable: 1 if SLA was breached, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: followup_count
+        description: "Number of followups on the ticket"
+        tests:
+          - not_null
+
+      - name: private_followup_ratio
+        description: "Ratio of private followups to total followups"
+
+      - name: avg_followup_content_length
+        description: "Average character length of followup content"
+
+      - name: issue_complexity_score
+        description: "Kaggle-only: complexity rating; NULL for GLPI"
+
+      - name: customer_tenure_months
+        description: "Kaggle-only: months customer has been active; NULL for GLPI"
+
+      - name: previous_tickets
+        description: "Kaggle-only: number of previous tickets by this customer; NULL for GLPI"
+
+      - name: is_escalated
+        description: "Kaggle-only: whether ticket was escalated; 0 for GLPI"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: gold_ticket_similarity
+    description: >
+      Hybrid similarity dataset for solution recommendation.
+      Two methods: structured_vector (GLPI — encodes priority/urgency/impact/resolution
+      into numeric buckets for weighted cosine similarity) and nlp_embedding
+      (Kaggle — prepares text_corpus for sentence-transformers embedding).
+      NLP embedding + FAISS indexing runs in Python outside dbt.
+    columns:
+
+      - name: similarity_pk
+        description: "Unique primary key for similarity features"
+        tests:
+          - not_null
+          - unique
+
+      - name: ticket_pk
+        description: "Original ticket PK from source staging"
+        tests:
+          - not_null
+
+      - name: source_system
+        description: "Source system identifier"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+                - customer_support_tickets_200k
+                - dataset_tickets_multi_lang
+
+      - name: similarity_method
+        description: "Method: 'structured_vector' for GLPI, 'nlp_embedding' for Kaggle"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - structured_vector
+                - nlp_embedding
+
+      - name: text_corpus
+        description: "Concatenated ticket_subject + ticket_body for NLP (NULL for GLPI)"
+
+      - name: priority_encoded
+        description: "Ordinal priority for structured similarity (GLPI only)"
+
+      - name: resolution_time_bucket
+        description: "Bucketed resolution time: 1-5 scale (GLPI only)"
+
+      - name: followup_count_bucket
+        description: "Bucketed followup count: 1-5 scale (GLPI only)"
+
+  - name: gold_asset_failure_risk
+    description: >
+      One-row-per-asset feature dataset for unsupervised anomaly detection.
+      Combines OCS hardware inventory, BIOS age, drive/storage health,
+      software risk profile, GLPI financial data, and ticket incident history.
+      rule_based_risk_score is the heuristic baseline for comparison with
+      Isolation Forest anomaly_score.
+    columns:
+
+      - name: hardware_pk
+        description: "Primary key from OCS hardware staging"
+        tests:
+          - not_null
+          - unique
+
+      - name: asset_name
+        description: "Normalized hostname or fallback identifier"
+        tests:
+          - not_null
+
+      - name: device_age_years
+        description: "BIOS age in years"
+        tests:
+          - not_null
+
+      - name: bios_risk_level_encoded
+        description: "Ordinal: 0=unknown, 1=low, 2=medium, 3=high, 4=critical"
+        tests:
+          - not_null
+
+      - name: worst_drive_health_encoded
+        description: "Ordinal: 0=unknown, 1=healthy, 2=medium, 3=high, 4=critical"
+        tests:
+          - not_null
+
+      - name: high_risk_software_count
+        description: "Count of software with risk level critical or high"
+        tests:
+          - not_null
+
+      - name: risk_software_ratio
+        description: "high_risk_software_count / total_software_count"
+        tests:
+          - not_null
+
+      - name: incident_count
+        description: "Count of GLPI tickets referencing this asset"
+        tests:
+          - not_null
+
+      - name: days_since_last_inventory
+        description: "Days since OCS last inventoried this asset"
+        tests:
+          - not_null
+
+      - name: rule_based_risk_score
+        description: "Heuristic risk score baseline (4-16 range); comparison column for ML output"
+        tests:
+          - not_null
+
+      - name: anomaly_score
+        description: "Isolation Forest anomaly score (lower = more anomalous); populated by Python"
+
+      - name: is_anomaly
+        description: "Boolean anomaly flag from Isolation Forest; populated by Python"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: gold_user_activity_anomalies
+    description: >
+      One-row-per-user behavioral feature dataset for unsupervised anomaly detection.
+      Aggregates activity from tickets, logs, and OCS inventory.
+      is_suspicious_user is a WEAK HEURISTIC — do NOT use as training label.
+      Use only for post-hoc validation of model output.
+    columns:
+
+      - name: user_pk
+        description: "Primary key from GLPI users staging"
+        tests:
+          - not_null
+          - unique
+
+      - name: user_name
+        description: "Login username"
+        tests:
+          - not_null
+
+      - name: user_type
+        description: "User type classification"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - HUMAN
+                - SERVICE
+                - SYSTEM
+                - TEST
+                - UNKNOWN
+
+      - name: user_type_encoded
+        description: "Ordinal: 0=HUMAN, 1=SERVICE, 2=SYSTEM, 3=TEST, 4=UNKNOWN"
+        tests:
+          - not_null
+
+      - name: is_ldap_user
+        description: "Whether user has an LDAP directory account"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: is_suspicious_user
+        description: "WEAK HEURISTIC — do NOT use as label. Post-hoc validation only."
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: total_activity_count
+        description: "Total count of all tracked activities across sources"
+        tests:
+          - not_null
+
+      - name: private_followup_ratio
+        description: "Ratio of private followups to total followups"
+
+      - name: url_content_ratio
+        description: "Ratio of followups containing URLs with no meaningful content"
+
+      - name: unique_entities_touched
+        description: "Number of distinct GLPI entities this user modified"
+        tests:
+          - not_null
+
+      - name: write_action_ratio
+        description: "Ratio of write actions (create/update/delete) to total log actions"
+
+      - name: activity_density
+        description: "Total activity count per day of active span"
+
+      - name: isolation_forest_score
+        description: "Isolation Forest anomaly score; populated by Python"
+
+      - name: lof_score
+        description: "Local Outlier Factor score; populated by Python"
+
+      - name: is_anomaly_if
+        description: "Isolation Forest anomaly flag; populated by Python"
+
+      - name: is_anomaly_lof
+        description: "LOF anomaly flag; populated by Python"
