@@ -237,9 +237,64 @@ ML-ready serving layer — one row per entity, denormalized for direct consumpti
 | Model | Purpose | ML Consumer | Key Outputs |
 |---|---|---|---|
 | `gold_sla_prediction_features` | SLA breach prediction dataset | XGBoost / LightGBM | priority_score, urgency_score, followup_count, was_sla_breached |
-| `gold_ticket_similarity` | Hybrid similarity (structured + NLP) | sentence-transformers + FAISS | text_corpus, priority_encoded, resolution_time_bucket, similarity_method |
+| `gold_ticket_similarity` | **Hybrid similarity** (see § below) | sentence-transformers + FAISS | synthetic_text_corpus, text_corpus, corpus_quality_score, similarity_confidence, similarity_method, embedding_strategy |
 | `gold_asset_failure_risk` | Anomaly detection on asset features | Isolation Forest | device_age_years, high_risk_software_count, incident_count, rule_based_risk_score |
 | `gold_user_activity_anomalies` | Behavioral anomaly detection | Isolation Forest + LOF | total_activity_count, private_followup_ratio, activity_density, user_type_encoded |
+
+### Hybrid Similarity Architecture — `gold_ticket_similarity`
+
+#### HARD LIMITATION — GLPI NLP Constraints
+
+`stg_glpi_tickets` has **NULL** `ticket_subject`, `ticket_body`, and `category` for ALL GLPI rows. No real NLP text exists for GLPI. Semantic embeddings cannot be generated directly. The current `text_corpus` architecture is fundamentally incomplete for enterprise IT tickets.
+
+**Do NOT** treat GLPI similarity scores as equivalent to Kaggle NLP scores.
+
+#### Two Independent Pipelines
+
+| Pipeline | Dataset | Corpus | Similarity Type | Confidence |
+|---|---|---|---|---|
+| **Kaggle NLP** | `stg_kaggle_tickets` | `ticket_subject + ticket_body` (real text) | `nlp_semantic` → sentence-transformers → FAISS | 0.90 |
+| **GLPI Synthetic** | `stg_glpi_tickets` + followups + infra | `synthetic_text_corpus` (metadata tokens) | `structured_metadata` → TF-IDF/SentenceTransformer → FAISS | 0.25–0.65 |
+
+#### Synthetic Context Reconstruction
+
+GLPI tickets are represented as space-separated metadata tokens reconstructed from:
+
+| Source | Tokens | Example |
+|---|---|---|
+| **Ticket Metadata** | priority, urgency, impact, status, SLA breach, resolution timing | `prio_critical urg_high impact_medium sla_breached very_long_resolution` |
+| **Followup Behavior** | interaction count, privacy ratio, content depth, URL density | `multiple_followups private_heavy_ticket detailed_interactions` |
+| **Infrastructure Context** | OS family, memory/cpu specs, BIOS risk, software risk profile | `windows_environment low_memory_device critical_bios_risk high_risk_software_present` |
+
+The synthetic corpus is NOT real natural language — it is a serialized metadata representation designed for embedding.
+
+#### Corpus Quality Scoring
+
+| Condition | Quality Score | Confidence | Meaning |
+|---|---|---|---|
+| Real NLP text available (Kaggle) | 1.00 | 0.90 | Full semantic retrieval |
+| Rich synthetic + infra joins (GLPI) | 0.70 | 0.65 | Operational context available |
+| Metadata + followups only (GLPI) | 0.50 | 0.45 | Limited context |
+| Ticket metadata only (GLPI sparse) | 0.30 | 0.25 | Weak representation |
+
+Scores must be exposed to downstream systems for ranking, filtering, and UI transparency.
+
+#### Embedding Strategy
+
+| Method | Pipeline | Tool | Output |
+|---|---|---|---|
+| `nlp_semantic` | Kaggle | `sentence-transformers` (paraphrase-multilingual-MiniLM-L12-v2) | 384-dim dense vector |
+| `structured_metadata` | GLPI | TF-IDF → scikit-learn / SentenceTransformer on synthetic tokens | Sparse or dense vector |
+
+Both pipelines feed into FAISS for unified ANN retrieval.
+
+#### RAG Compatibility
+
+The architecture supports future:
+- Vector databases (Chroma, Qdrant, pgvector) storing both embedding types
+- Metadata filtering by `text_source_type`, `corpus_quality_score`, `source_system`
+- Hybrid search combining dense (NLP) and sparse (structured) retrieval
+- AI technician copilots with confidence-weighted ranking
 
 ### ML Pipeline (Python, implements after dbt)
 
@@ -250,16 +305,19 @@ Gold tables → Python ML scripts → pred_* tables → Dashboard / API
 | Step | Tool | Input | Output |
 |---|---|---|---|
 | Train SLA classifier | XGBoost / LightGBM | `gold_sla_prediction_features` | model_sla.pkl + pred_sla_breach table |
-| Build NLP embeddings | sentence-transformers | `gold_ticket_similarity.text_corpus` | FAISS index |
+| Build NLP embeddings | sentence-transformers | `gold_ticket_similarity.text_corpus` (Kaggle) | FAISS index |
+| Build structured embeddings | TF-IDF / SentenceTransformer | `gold_ticket_similarity.synthetic_text_corpus` (GLPI) | FAISS index |
 | Train anomaly models | scikit-learn Isolation Forest | `gold_asset_failure_risk`, `gold_user_activity_anomalies` | model_if_asset.pkl, model_if_user.pkl |
 
 ### Data Limitations (Gold Layer)
 
 | Limitation | Source | Impact |
 |---|---|---|
-| No ticket text for GLPI | stg_glpi_tickets | NLP not possible for GLPI — structured similarity only |
+| **No ticket text for GLPI** | `stg_glpi_tickets` | NLP not possible for GLPI — synthetic context reconstruction only. Similarity confidence 0.25–0.65 vs Kaggle 0.90. |
+| Synthetic corpus is NOT real language | `gold_ticket_similarity` | Structured embeddings are weaker than true NLP embeddings. Retrieval quality for GLPI is strictly lower than Kaggle. |
+| Similarity confidence must be exposed | All pipelines | Downstream systems must NOT treat GLPI and Kaggle similarity scores as equivalent. |
 | No login/authentication data | None in any source | Cannot compute login frequency, failed login ratio |
-| `is_suspicious_user` is heuristic | stg_glpi_users | Must NOT be used as ground truth label |
+| `is_suspicious_user` is heuristic | `stg_glpi_users` | Must NOT be used as ground truth label |
 | Data spans 2013–2015 only | Source DB dumps | Temporal drift may affect model relevance |
 
 ### Data Lineage

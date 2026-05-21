@@ -128,7 +128,7 @@ stg_ocs_hardware (logged_user) ────────────────�
 | Model | Sources | Purpose | ML Consumer | Key Outputs |
 |---|---|---|---|---|
 | **gold_sla_prediction_features** | `stg_glpi_tickets`, `stg_glpi_ticketfollowups`, `stg_kaggle_tickets` | ML-ready SLA breach prediction dataset | XGBoost / LightGBM classifier | priority_score, urgency_score, ticket_age_hours, followup_count, was_sla_breached (target) |
-| **gold_ticket_similarity** | `stg_glpi_tickets`, `stg_glpi_ticketfollowups`, `stg_kaggle_tickets` | Hybrid similarity: structured (GLPI) + NLP (Kaggle) | FAISS + sentence-transformers | text_corpus, priority_encoded, resolution_time_bucket, similarity_method |
+| **gold_ticket_similarity** | `stg_glpi_tickets`, `stg_glpi_ticketfollowups`, `stg_kaggle_tickets`, `bronze_glpi_tickets`, `stg_glpi_computers`, `stg_ocs_hardware`, `stg_ocs_bios`, `stg_ocs_software` | **Hybrid similarity: Two independent pipelines** — Kaggle (real NLP text → sentence-transformers) + GLPI (synthetic context tokens → structured embeddings) | FAISS + sentence-transformers + TF-IDF | synthetic_text_corpus, text_corpus, corpus_quality_score (0.3–1.0), similarity_confidence (0.25–0.90), similarity_method, embedding_strategy, text_source_type |
 | **gold_asset_failure_risk** | OCS + GLPI (8 staging models) | Anomaly detection on asset features | Isolation Forest | device_age_years, high_risk_software_count, incident_count, rule_based_risk_score, anomaly_score |
 | **gold_user_activity_anomalies** | `stg_glpi_users`, `stg_glpi_logs`, `stg_glpi_ticketfollowups`, `stg_ocs_hardware` | Behavioral anomaly detection per user | Isolation Forest + LOF | total_activity_count, private_followup_ratio, write_action_ratio, activity_density |
 
@@ -137,11 +137,22 @@ stg_ocs_hardware (logged_user) ────────────────�
 ```
 stg_glpi_tickets ────────────────────────────────────────────────────┐
 stg_glpi_ticketfollowups ────────────────────────────────────────────┤
-                                                                      ├──> gold_sla_prediction_features
+                                                                       ├──> gold_sla_prediction_features
 stg_kaggle_tickets ──────────────────────────────────────────────────┘
-                                 ────────────────────────────────────┐
-                                                                      ├──> gold_ticket_similarity
-                                                                      │
+
+┌── GLPI PIPELINE (Synthetic Context) ──────────────────────────────┐
+│ stg_glpi_tickets (metadata → tokens)                               ├──> gold_ticket_similarity
+│ stg_glpi_ticketfollowups (behavioral enrichment → tokens)          │    (synthetic_text_corpus,
+│ bronze_glpi_tickets.items_id → stg_glpi_computers →                │     structured_metadata embeddings,
+│   stg_ocs_hardware → stg_ocs_bios → stg_ocs_software               │     confidence scores)
+│     (infrastructure context → tokens)                              │
+└────────────────────────────────────────────────────────────────────┘
+
+┌── KAGGLE PIPELINE (Real NLP Text) ────────────────────────────────┐
+│ stg_kaggle_tickets (ticket_subject + ticket_body)                  ├──> gold_ticket_similarity
+│   → text_corpus → sentence-transformers → FAISS                   │    (text_corpus, nlp_embedding,
+└────────────────────────────────────────────────────────────────────┘     embedding_model)
+
 stg_ocs_hardware ────────┐                                            │
 stg_ocs_bios ────────────┤                                            │
 stg_ocs_drives ──────────┤                                            │
@@ -341,13 +352,35 @@ Gold tables (dbt)
     ▼
 Python ML scripts
     │
-    ├── XGBoost / LightGBM  ──► gold_sla_prediction_features
-    ├── sentence-transformers ──► gold_ticket_similarity (NLP path)
-    ├── Isolation Forest      ──► gold_asset_failure_risk
-    └── Isolation Forest + LOF ──► gold_user_activity_anomalies
+    ├── XGBoost / LightGBM               ──► gold_sla_prediction_features
+    ├── sentence-transformers (Kaggle)    ──► gold_ticket_similarity.text_corpus
+    ├── TF-IDF / SentenceTransformer      ──► gold_ticket_similarity.synthetic_text_corpus
+    │   (GLPI synthetic metadata tokens)
+    ├── Isolation Forest                 ──► gold_asset_failure_risk
+    ├── Isolation Forest + LOF           ──► gold_user_activity_anomalies
+    └── FAISS (unified index)             ──► both embedding types → ANN retrieval
     │
     ▼
 pred_* tables (warehouse) ──► Dashboard / Triage Center API
+```
+
+### Synthetic Context Pipeline
+
+```
+GLPI Ticket (stg_glpi_tickets)
+    │
+    ├── Metadata Encoding ──► priority/urgency/impact/status tokens
+    ├── Followup Enrichment ──► interaction pattern tokens
+    └── Infrastructure Context ──► OS/hardware/BIOS/software tokens
+    │
+    ▼
+synthetic_text_corpus (space-separated token string)
+    │
+    ▼
+TF-IDF / SentenceTransformer ──► Structured Embeddings
+    │
+    ▼
+FAISS Index ──► Hybrid ANN Retrieval
 ```
 
 ### Model Registry
@@ -355,7 +388,7 @@ pred_* tables (warehouse) ──► Dashboard / Triage Center API
 | Model | Type | Gold Dataset | Status | Key Limitation |
 |---|---|---|---|---|
 | SLA Breach Prediction | Binary Classification | `gold_sla_prediction_features` | Built (needs ML) | GLPI missing complexity/tenure/escalation features |
-| Ticket Similarity | Hybrid NLP + Structured | `gold_ticket_similarity` | Built (needs ML) | GLPI has no text — structured fallback only |
+| Ticket Similarity | **Hybrid: NLP (Kaggle) + Synthetic Context (GLPI)** | `gold_ticket_similarity` | Built (needs ML) | **GLPI has no text** — `synthetic_text_corpus` approximates semantics via metadata tokens. Similarity confidence 0.25–0.65 (GLPI) vs 0.90 (Kaggle). Must NOT treat pipelines as equivalent. |
 | Asset Failure Risk | Anomaly Detection | `gold_asset_failure_risk` | Built (needs ML) | No labeled failures — unsupervised |
 | User Activity Anomalies | Behavioral Anomaly Detection | `gold_user_activity_anomalies` | Built (needs ML) | No ground truth — weak heuristic only |
 
@@ -363,19 +396,23 @@ pred_* tables (warehouse) ──► Dashboard / Triage Center API
 
 | Limitation | Source | Impact |
 |---|---|---|
-| **No ticket text for GLPI** | `stg_glpi_tickets` | ticket_subject, ticket_body are NULL → NLP not possible for GLPI |
+| Limitation | Source | Impact |
+|---|---|---|---|
+| **No ticket text for GLPI** | `stg_glpi_tickets` | ticket_subject, ticket_body are NULL → NLP impossible for GLPI. Synthetic context reconstruction via metadata tokens is the only available representation. |
+| **Synthetic corpus is NOT real language** | `gold_ticket_similarity` | `synthetic_text_corpus` is space-separated metadata tokens, not natural language. Structured embeddings are weaker than true NLP embeddings. Similarity confidence for GLPI (0.25–0.65) is strictly lower than Kaggle (0.90). |
+| **Similarity confidence must be exposed downstream** | All similarity pipelines | Systems consuming similarity scores MUST NOT treat GLPI and Kaggle results as equivalent. Confidence scores (`corpus_quality_score`, `similarity_confidence`) enable proper ranking/filtering. |
 | **No login/authentication data** | None exists in any source | Cannot compute login_frequency, failed_login_ratio, session metrics |
 | **No geolocation for users** | None exists | Cannot compute geo_variance or location changes |
 | **is_suspicious_user is heuristic** | `stg_glpi_users` | Must NOT be used as ground truth label |
 | **Data spans 2013–2015 only** | Source DB dumps | Temporal drift may affect model relevance |
-| **Follow-up text content not extracted** | `stg_glpi_ticketfollowups` | Only metadata (length, privacy flag) available |
+| **Follow-up text content not extracted** | `stg_glpi_ticketfollowups` | Only metadata (length, privacy flag, URL presence) available for behavioral enrichment |
 
 ### Dashboard Mapping
 
 | Dashboard Component | Gold Model(s) | ML Dependency |
 |---|---|---|
 | **TriageFeed** | gold_sla_prediction_features | SLA breach prediction |
-| **SolutionRecommender** | gold_ticket_similarity | FAISS similarity search |
+| **SolutionRecommender** | gold_ticket_similarity | **Dual-pipeline FAISS**: Kaggle (NLP embeddings, confidence 0.90) + GLPI (structured embeddings, confidence 0.25–0.65). Results must be confidence-weighted. |
 | **AssetRiskTable** | gold_asset_failure_risk | Anomaly scores |
 | **SecurityClusters** | gold_asset_failure_risk (for critical assets) | — |
 | **FailureQueue** | gold_sla_prediction_features (escalation risk) | SLA prediction |
@@ -452,7 +489,7 @@ gold:
 | Fix dbt test failures (staging) | High | ~60 tests fail due to schema mismatches and duplicate PKs |
 | Build Python ML pipeline | High | XGBoost + Isolation Forest + sentence-transformers outside dbt |
 | Implement pred_* prediction tables | High | Store model outputs back into warehouse for dashboard consumption |
-| Implement FAISS similarity index | Medium | NLP embedding + ANN search for gold_ticket_similarity |
+| Implement FAISS indexes (dual) | High | **Two indexes**: NLP embeddings (Kaggle text_corpus) + structured embeddings (GLPI synthetic_text_corpus). Unified ANN retrieval with `text_source_type` and `corpus_quality_score` metadata filtering. |
 | Change silver materialization to `table` | Medium | Currently `view` in dbt_project.yml; tables would improve query performance |
 | Add gold-specific data loss tests | Medium | Row count parity: gold >= 80% of source staging row count |
 | Extract shared ingestion module | Medium | Reduce duplicate Kaggle code |
