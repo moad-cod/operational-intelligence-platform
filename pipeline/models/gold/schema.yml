@@ -88,11 +88,12 @@ models:
 
   - name: gold_ticket_similarity
     description: >
-      Hybrid similarity dataset for solution recommendation.
-      Two methods: structured_vector (GLPI — encodes priority/urgency/impact/resolution
-      into numeric buckets for weighted cosine similarity) and nlp_embedding
-      (Kaggle — prepares text_corpus for sentence-transformers embedding).
-      NLP embedding + FAISS indexing runs in Python outside dbt.
+      HYBRID SIMILARITY ARCHITECTURE — two independent pipelines:
+      1. KAGGLE: real NLP text (ticket_subject + ticket_body) → sentence-transformers → FAISS
+      2. GLPI: synthetic context (reconstructed metadata tokens) → TF-IDF / structured embeddings → FAISS
+      HARD LIMITATION: GLPI tickets have NULL ticket_subject, ticket_body, and category.
+      No real NLP text exists for GLPI. All GLPI representations are synthetic reconstructions
+      from structured metadata only. Do NOT treat GLPI similarity scores as equivalent to Kaggle NLP scores.
     columns:
 
       - name: similarity_pk
@@ -116,26 +117,105 @@ models:
                 - customer_support_tickets_200k
                 - dataset_tickets_multi_lang
 
+      - name: text_corpus
+        description: "Real NLP text: ticket_subject + ticket_body concatenation (Kaggle only; NULL for GLPI)"
+
+      - name: synthetic_text_corpus
+        description: >
+          GLPI-only: reconstructed contextual metadata representation from structured fields.
+          NOT real natural language. A space-separated token string encoding priority, urgency,
+          impact, status, SLA breach status, lifecycle timing, followup behavioral patterns,
+          and infrastructure context (OS, hardware, BIOS, software).
+          Suitable for TF-IDF, SentenceTransformer, or FeatureHasher embedding.
+
       - name: similarity_method
-        description: "Method: 'structured_vector' for GLPI, 'nlp_embedding' for Kaggle"
+        description: "'synthetic_context' for GLPI, 'nlp_embedding' for Kaggle"
         tests:
           - not_null
           - accepted_values:
               values:
-                - structured_vector
+                - synthetic_context
                 - nlp_embedding
 
-      - name: text_corpus
-        description: "Concatenated ticket_subject + ticket_body for NLP (NULL for GLPI)"
+      - name: embedding_strategy
+        description: "'structured_metadata' for GLPI, 'nlp_semantic' for Kaggle"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - structured_metadata
+                - nlp_semantic
+
+      - name: text_source_type
+        description: "'synthetic_context' for GLPI, 'real_text' for Kaggle"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - synthetic_context
+                - real_text
+
+      - name: embedding_model
+        description: "NLP model used for embedding (Kaggle: paraphrase-multilingual-MiniLM-L12-v2; GLPI: NULL)"
 
       - name: priority_encoded
-        description: "Ordinal priority for structured similarity (GLPI only)"
+        description: "Ordinal priority: 5=critical, 4=high, 3=medium, 2=low, 1=unknown (GLPI only; NULL for Kaggle)"
 
-      - name: resolution_time_bucket
-        description: "Bucketed resolution time: 1-5 scale (GLPI only)"
+      - name: urgency_encoded
+        description: "Ordinal urgency: 5=critical, 4=high, 3=medium, 2=low, 1=unknown (GLPI only; NULL for Kaggle)"
+
+      - name: impact_encoded
+        description: "Ordinal impact: 5=critical, 4=high, 3=medium, 2=low, 1=unknown (GLPI only; NULL for Kaggle)"
 
       - name: followup_count_bucket
-        description: "Bucketed followup count: 1-5 scale (GLPI only)"
+        description: "Bucketed followup count: 1-5 scale (GLPI only; NULL for Kaggle)"
+
+      - name: corpus_quality_score
+        description: >
+          Trustworthiness of the ticket representation (0.0–1.0).
+          1.0 = real NLP text (Kaggle).
+          0.70 = rich synthetic context with infrastructure joins (GLPI).
+          0.50 = metadata + followup tokens only (GLPI).
+          0.30 = ticket metadata only (GLPI sparse).
+          Use for downstream ranking, recommendation filtering, and UI transparency.
+        tests:
+          - not_null
+
+      - name: similarity_confidence
+        description: >
+          Retrieval reliability score (0.0–1.0). Accounts for representational quality.
+          0.90 = real NLP embeddings (Kaggle).
+          0.65 = synthetic context with infrastructure joins (GLPI).
+          0.45 = synthetic context without infrastructure joins (GLPI).
+          0.25 = sparse metadata only (GLPI).
+          Must be exposed to downstream systems so recommendation confidence is transparent.
+
+      - name: followup_count
+        description: "Total number of followups on this ticket (GLPI only; 0 for Kaggle)"
+
+      - name: avg_followup_content_length
+        description: "Average character length of followup content (GLPI only; 0 for Kaggle)"
+
+      - name: private_followup_ratio
+        description: "Ratio of private followups to total (GLPI only; 0 for Kaggle)"
+
+      - name: url_content_ratio
+        description: "Ratio of followups containing URLs (GLPI only; 0 for Kaggle)"
+
+      - name: meaningful_content_ratio
+        description: "Ratio of followups with meaningful content (GLPI only; 0 for Kaggle)"
+
+      - name: has_os_context
+        description: "1 if OS family info was joined from OCS, 0 otherwise (GLPI only; 0 for Kaggle)"
+
+      - name: has_hardware_context
+        description: "1 if hardware specs (memory) were joined from OCS, 0 otherwise (GLPI only; 0 for Kaggle)"
+
+      - name: has_bios_context
+        description: "1 if BIOS risk info was joined from OCS, 0 otherwise (GLPI only; 0 for Kaggle)"
+
+      - name: has_software_context
+        description: "1 if software risk info was joined from OCS, 0 otherwise (GLPI only; 0 for Kaggle)"
 
   - name: gold_asset_failure_risk
     description: >
