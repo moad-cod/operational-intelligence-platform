@@ -1,0 +1,1778 @@
+version: 2
+
+models:
+
+  # =====================================
+  # GLPI COMPUTERS
+  # =====================================
+
+  - name: stg_glpi_computers
+
+    description: "Cleaned staging model for GLPI computers"
+
+    columns:
+
+      - name: unique_id
+        description: "Composite technical key"
+        tests:
+          - not_null
+          - unique
+
+      - name: computer_id
+        tests:
+          - not_null
+
+      - name: computer_uuid
+
+      - name: has_uuid
+        tests:
+          - not_null
+
+      - name: computer_name
+        tests:
+          - not_null
+
+      - name: is_template
+        tests:
+          - not_null
+
+      - name: is_deleted
+        tests:
+          - not_null
+
+      - name: is_ocs_import
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values: [2013, 2014, 2015]
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+      - name: computer_type
+        tests:
+          - accepted_values:
+              values:
+                - template
+                - real_machine
+
+  - name: stg_glpi_devicegraphiccards
+
+    description: "Cleaned staging model for GLPI graphic cards"
+
+    columns:
+
+      - name: gpu_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: gpu_id
+        tests:
+          - not_null
+
+      - name: gpu_name
+        tests:
+          - not_null
+
+      - name: gpu_brand
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - NVIDIA
+                - Intel
+                - AMD
+                - Matrox
+                - Other
+
+      - name: gpu_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - integrated
+                - dedicated
+                - virtual
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+                - unknown
+                - virtual
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+  - name: stg_glpi_devicememories
+
+    description: "Cleaned staging model for GLPI memory devices"
+
+    columns:
+
+      - name: memory_pk
+        description: "Composite primary key using source year and memory id"
+        tests:
+          - not_null
+          - unique
+
+      - name: memory_id
+        tests:
+          - not_null
+
+      - name: designation
+
+      - name: memory_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - DDR5
+                - DDR4
+                - DDR3
+                - DDR2
+                - DDR
+                - SDRAM
+                - RDRAM
+                - Other
+
+      - name: is_ecc
+        tests:
+          - not_null
+
+      - name: frequency_mhz
+
+      - name: has_frequency_data
+        tests:
+          - not_null
+
+      - name: memory_size_gb
+
+      - name: memory_capacity_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - enterprise
+                - high
+                - medium
+                - low
+                - legacy
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: is_server_memory
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+  - name: stg_glpi_deviceprocessors
+
+    description: "Cleaned staging model for GLPI processors"
+
+    columns:
+
+      - name: processor_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: processor_id
+        tests:
+          - not_null
+
+      - name: cpu_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - i9
+                - i7
+                - i5
+                - i3
+                - Xeon
+                - Ryzen9
+                - Ryzen7
+                - Ryzen5
+                - Ryzen3
+                - Pentium
+                - Atom
+                - Core2Duo
+                - Other
+
+      - name: architecture
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - x64
+                - x86
+                - unknown
+
+      - name: has_frequency_data
+        tests:
+          - not_null
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: is_server_cpu
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_glpi_infocoms
+
+    description: "Cleaned staging model for GLPI asset financial information"
+
+    columns:
+
+      - name: infocom_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: infocom_id
+        tests:
+          - not_null
+
+      - name: item_id
+        tests:
+          - not_null
+
+      - name: item_type
+
+      - name: entity_id
+
+      - name: asset_value
+
+      - name: warranty_value
+
+      - name: buy_date
+
+      - name: warranty_date
+
+      - name: has_warranty
+        tests:
+          - not_null
+
+      - name: asset_value_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+  - name: stg_glpi_logs
+
+    description: "Cleaned staging model for GLPI audit logs"
+
+    columns:
+
+      - name: unique_id
+        description: "Composite unique identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: log_id
+        tests:
+          - not_null
+
+      - name: entity_id
+
+      - name: entity_type
+
+      - name: linked_entity_type
+
+      - name: linked_action
+
+      - name: user_name
+
+      - name: has_user
+        tests:
+          - not_null
+
+      - name: updated_at
+
+      - name: field_id
+
+      - name: old_value
+
+      - name: new_value
+
+      - name: change_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - created
+                - deleted
+                - updated
+                - no_change
+
+      - name: has_change
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_glpi_ticketfollowups
+
+    description: "Cleaned staging model for GLPI ticket followups"
+
+    columns:
+
+      - name: ticket_followup_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: followup_id
+        tests:
+          - not_null
+
+      - name: ticket_id
+        tests:
+          - not_null
+
+      - name: created_at
+
+      - name: user_id
+
+      - name: request_type_id
+
+      - name: content
+
+      - name: has_meaningful_content
+        tests:
+          - not_null
+
+      - name: contains_url
+        tests:
+          - not_null
+
+      - name: is_private
+        tests:
+          - not_null
+
+      - name: content_length
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_glpi_tickets
+
+    description: "Cleaned staging model for GLPI tickets"
+
+    columns:
+
+      - name: ticket_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: ticket_id
+        tests:
+          - not_null
+
+      - name: created_at
+
+      - name: solved_at
+
+      - name: closed_at
+
+      - name: status
+
+      - name: is_closed
+        tests:
+          - not_null
+
+      - name: is_resolved
+        tests:
+          - not_null
+
+      - name: is_waiting
+        tests:
+          - not_null
+
+      - name: is_deleted
+        tests:
+          - not_null
+
+      - name: resolution_time_hours
+
+      - name: closure_time_hours
+
+      - name: priority_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: urgency_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: impact_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_glpi_users
+
+    description: "Cleaned staging model for GLPI users"
+
+    columns:
+
+      - name: user_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: user_id
+        tests:
+          - not_null
+
+      - name: user_name
+
+      - name: normalized_username
+
+      - name: first_name
+
+      - name: last_name
+
+      - name: full_name
+
+      - name: user_dn
+
+      - name: has_directory_account
+        tests:
+          - not_null
+
+      - name: is_ldap_user
+        tests:
+          - not_null
+
+      - name: personal_token
+
+      - name: has_personal_token
+        tests:
+          - not_null
+
+      - name: personal_token_date
+
+      - name: user_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - SYSTEM
+                - SERVICE
+                - TEST
+                - HUMAN
+                - UNKNOWN
+
+      - name: has_username
+        tests:
+          - not_null
+
+      - name: has_real_identity
+        tests:
+          - not_null
+
+      - name: suspicious_account
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_glpi_itilcategories
+
+    description: "Cleaned staging model for GLPI ITIL ticket categories"
+
+    columns:
+
+      - name: itil_category_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: category_id
+        tests:
+          - not_null
+
+      - name: full_category_name
+
+      - name: category_name
+
+      - name: normalized_category_name
+
+      - name: parent_category_id
+
+      - name: level
+
+      - name: is_root_category
+        tests:
+          - not_null
+
+      - name: category_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - NETWORK
+                - HARDWARE
+                - SOFTWARE
+                - SECURITY
+                - PRINTER
+                - MAIL
+                - VPN
+                - OTHER
+
+      - name: is_visible_helpdesk
+        tests:
+          - not_null
+
+      - name: category_complexity
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: has_valid_name
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - GLPI
+
+  - name: stg_ocs_bios
+
+    description: "Cleaned staging model for OCS BIOS inventory"
+
+    columns:
+
+      - name: bios_pk
+        description: "Composite primary key using source year and hardware id"
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: system_manufacturer
+
+      - name: system_model
+
+      - name: serial_number
+
+      - name: device_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - desktop
+                - laptop
+                - server
+                - other
+
+      - name: bios_manufacturer
+
+      - name: bios_version
+
+      - name: bios_date
+
+      - name: asset_tag
+
+      - name: manufacturer_group
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - HP
+                - Dell
+                - Lenovo
+                - Foxconn
+                - MSI
+                - Other
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_bios_version
+        tests:
+          - not_null
+
+      - name: bios_age_years
+
+      - name: bios_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_ocs_drives
+
+    description: "Cleaned staging model for OCS storage drives"
+
+    columns:
+
+      - name: drive_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: drive_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: drive_letter
+
+      - name: drive_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - fixed
+                - removable
+                - usb
+                - network
+                - cdrom
+                - other
+
+      - name: filesystem
+
+      - name: total_size_gb
+
+      - name: free_size_gb
+
+      - name: num_files
+
+      - name: volume_label
+
+      - name: created_date
+
+      - name: used_percent
+
+      - name: storage_health
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - healthy
+                - unknown
+
+      - name: is_large_drive
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_ocs_hardware
+
+    description: "Cleaned staging model for OCS hardware inventory"
+
+    columns:
+
+      - name: hardware_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: device_id
+
+      - name: hostname
+
+      - name: normalized_hostname
+
+      - name: workgroup
+
+      - name: user_domain
+
+      - name: current_user
+
+      - name: os_name
+
+      - name: os_version
+
+      - name: os_comments
+
+      - name: os_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Windows
+                - Linux
+                - MacOS
+                - Other
+
+      - name: processor_type
+
+      - name: cpu_packages
+
+      - name: cpu_cores
+
+      - name: memory_gb
+
+      - name: swap_gb
+
+      - name: memory_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - critical
+
+      - name: ip_address
+
+      - name: dns_name
+
+      - name: default_gateway
+
+      - name: ip_source
+
+      - name: has_valid_ipv4
+        tests:
+          - not_null
+
+      - name: inventory_time
+
+      - name: last_inventory_date
+
+      - name: last_seen_date
+
+      - name: inventory_quality
+
+      - name: inventory_fidelity
+
+      - name: inventory_quality_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - excellent
+                - good
+                - medium
+                - poor
+
+      - name: windows_company
+
+      - name: windows_owner
+
+      - name: windows_product_id
+
+      - name: has_windows_key
+        tests:
+          - not_null
+
+      - name: user_agent
+
+      - name: inventory_checksum
+
+      - name: system_state
+
+      - name: uuid
+
+      - name: architecture
+
+      - name: architecture_family
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 64bit
+                - 32bit
+                - unknown
+
+      - name: has_uuid
+        tests:
+          - not_null
+
+      - name: has_logged_user
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_ocs_memories
+
+    description: "Cleaned staging model for OCS memory inventory"
+
+    columns:
+
+      - name: memory_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: memory_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: memory_caption
+
+      - name: memory_description
+
+      - name: capacity_gb
+
+      - name: memory_purpose
+
+      - name: memory_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - DDR5
+                - DDR4
+                - DDR3
+                - DDR2
+                - DDR
+                - SDRAM
+                - Other
+
+      - name: speed_mhz
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: num_slots
+
+      - name: serial_number
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_capacity
+        tests:
+          - not_null
+
+      - name: memory_size_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_ocs_networks
+
+    description: "Cleaned staging model for OCS network inventory"
+
+    columns:
+
+      - name: network_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: network_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: network_description
+
+      - name: network_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - ethernet
+                - wifi
+                - bluetooth
+                - loopback
+                - vpn
+                - other
+
+      - name: network_mib
+
+      - name: speed_mbps
+
+      - name: speed_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: mac_address
+
+      - name: connection_status
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - active
+                - inactive
+                - unknown
+
+      - name: ip_address
+
+      - name: ip_mask
+
+      - name: ip_gateway
+
+      - name: ip_subnet
+
+      - name: dhcp_server
+
+      - name: has_valid_ipv4
+        tests:
+          - not_null
+
+      - name: uses_dhcp
+        tests:
+          - not_null
+
+      - name: is_virtual_device
+        tests:
+          - not_null
+
+      - name: has_mac_address
+        tests:
+          - not_null
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_ocs_storages
+
+    description: "Cleaned staging model for OCS physical storage inventory"
+
+    columns:
+
+      - name: storage_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: storage_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: manufacturer
+
+      - name: manufacturer_group
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Seagate
+                - Western Digital
+                - Samsung
+                - Toshiba
+                - Kingston
+                - Intel
+                - Other
+
+      - name: storage_name
+
+      - name: storage_model
+
+      - name: storage_description
+
+      - name: storage_type
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - SSD
+                - NVMe
+                - HDD
+                - SATA
+                - SAS
+                - Other
+
+      - name: disk_size_gb
+
+      - name: storage_size_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: serial_number
+
+      - name: firmware_version
+
+      - name: has_serial_number
+        tests:
+          - not_null
+
+      - name: has_firmware
+        tests:
+          - not_null
+
+      - name: performance_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - ultra
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+  - name: stg_ocs_software
+
+    description: "Cleaned staging model for OCS software inventory"
+
+    columns:
+
+      - name: software_pk
+        description: "Surrogate unique key for software inventory rows"
+        tests:
+          - not_null
+          - unique
+
+      - name: software_id
+        tests:
+          - not_null
+
+      - name: hardware_id
+        tests:
+          - not_null
+
+      - name: publisher
+
+      - name: software_name
+
+      - name: normalized_software_name
+
+      - name: software_version
+
+      - name: install_folder
+
+      - name: comments
+
+      - name: executable_name
+
+      - name: filesize_mb
+
+      - name: software_source
+
+      - name: software_guid
+
+      - name: software_language
+
+      - name: install_date
+
+      - name: architecture
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 64bit
+                - 32bit
+                - unknown
+
+      - name: software_category
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - office
+                - browser
+                - security
+                - database
+                - development
+                - virtualization
+                - other
+
+      - name: has_guid
+        tests:
+          - not_null
+
+      - name: has_version
+        tests:
+          - not_null
+
+      - name: has_install_date
+        tests:
+          - not_null
+
+      - name: software_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - normal
+
+      - name: source_year
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 2013
+                - 2014
+                - 2015
+
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - OCS
+
+  - name: stg_kaggle_tickets
+
+    description: "Unified multilingual customer support and NLP ticket dataset"
+
+    columns:
+
+      - name: unified_ticket_pk
+        description: "Surrogate unique key for unified tickets"
+        tests:
+          - not_null
+          - unique
+
+      - name: source_dataset
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - customer_support_tickets_200k
+                - dataset_tickets_multi_lang
+
+      - name: category
+
+      - name: ticket_subject
+
+      - name: ticket_body
+
+      - name: resolution_notes
+
+      - name: priority
+        tests:
+          - accepted_values:
+              values:
+                - low
+                - medium
+                - high
+                - critical
+                - urgent
+
+      - name: ticket_status
+
+      - name: language
+
+      - name: customer_email
+
+      - name: communication_channel
+
+      - name: operating_system
+
+      - name: browser
+
+      - name: issue_complexity_score
+
+      - name: is_escalated
+        tests:
+          - not_null
+
+      - name: is_sla_breached
+        tests:
+          - not_null
+
+      - name: answer
+  - name: stg_cve_kaggle
+
+    description: "Cleaned cybersecurity CVE vulnerability staging dataset"
+
+    columns:
+
+      - name: cve_pk
+        description: "Unique surrogate key for CVE records"
+        tests:
+          - not_null
+          - unique
+
+      - name: original_index
+
+      - name: cwe_code
+
+      - name: cwe_name
+
+      - name: cve_summary
+
+      - name: published_at
+
+      - name: modified_at
+
+      - name: cvss_score
+
+      - name: severity_level
+        tests:
+          - accepted_values:
+              values:
+                - critical
+                - high
+                - medium
+                - low
+                - unknown
+
+      - name: access_authentication
+
+      - name: access_complexity
+
+      - name: access_vector
+
+      - name: impact_availability
+
+      - name: impact_confidentiality
+
+      - name: impact_integrity
+
+      - name: is_remote_exploitable
+        tests:
+          - not_null
+
+      - name: is_critical
+        tests:
+          - not_null
+
+      - name: easy_to_exploit
+        tests:
+          - not_null
+  - name: stg_harddrive_kaggle
+
+    description: "Cleaned hard drive SMART monitoring and failure prediction dataset"
+
+    columns:
+
+      - name: harddrive_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: serial_number
+
+      - name: model_name
+
+      - name: snapshot_date
+
+      - name: capacity_gb
+
+      - name: has_failed
+        tests:
+          - not_null
+
+      - name: reallocated_sectors
+
+      - name: power_on_hours
+
+      - name: reported_uncorrectable_errors
+
+      - name: command_timeout
+
+      - name: current_pending_sector_count
+
+      - name: offline_uncorrectable
+
+      - name: udma_crc_errors
+
+      - name: temperature_celsius
+
+      - name: has_reallocated_sectors
+        tests:
+          - not_null
+
+      - name: has_pending_sectors
+        tests:
+          - not_null
+
+      - name: has_uncorrectable_sectors
+        tests:
+          - not_null
+
+      - name: has_crc_errors
+        tests:
+          - not_null
+
+      - name: health_status
+        tests:
+          - accepted_values:
+              values:
+                - healthy
+                - warning
+                - critical
+                - failed
+
+      - name: disk_risk_score
+
+  - name: stg_laptop_price_kaggle
+
+    description: "Cleaned laptop hardware and pricing dataset"
+
+    columns:
+
+      - name: laptop_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: laptop_id
+
+      - name: company
+
+      - name: product_name
+
+      - name: laptop_type
+
+      - name: screen_size_inches
+
+      - name: screen_resolution
+
+      - name: has_ips_panel
+        tests:
+          - not_null
+
+      - name: has_touchscreen
+        tests:
+          - not_null
+
+      - name: cpu_name
+
+      - name: cpu_family
+        tests:
+          - accepted_values:
+              values:
+                - i7
+                - i5
+                - i3
+                - ryzen7
+                - ryzen5
+                - celeron
+                - other
+
+      - name: ram_gb
+
+      - name: storage_configuration
+
+      - name: has_ssd
+        tests:
+          - not_null
+
+      - name: has_hdd
+        tests:
+          - not_null
+
+      - name: gpu_name
+
+      - name: gpu_brand
+        tests:
+          - accepted_values:
+              values:
+                - NVIDIA
+                - AMD
+                - Intel
+                - Other
+
+      - name: operating_system
+
+      - name: weight_kg
+
+      - name: price_euros
+
+      - name: price_segment
+        tests:
+          - accepted_values:
+              values:
+                - premium
+                - mid_range
+                - budget
+                - unknown
+
+  - name: stg_windows_eventlog_kaggle
+
+    description: "Cleaned Windows Event Log cybersecurity dataset"
+
+    columns:
+
+      - name: eventlog_pk
+        tests:
+          - not_null
+          - unique
+
+      - name: original_index
+
+      - name: machine_name
+
+      - name: event_category
+
+      - name: entry_type
+
+      - name: event_message
+
+      - name: event_source
+
+      - name: generated_at
+
+      - name: country
+
+      - name: region_name
+
+      - name: city
+
+      - name: zip_code
+
+      - name: timezone
+
+      - name: isp
+
+      - name: severity_level
+        tests:
+          - accepted_values:
+              values:
+                - critical
+                - warning
+                - high
+                - audit
+                - informational
+
+      - name: suspicious_activity
+        tests:
+          - not_null
+
+      - name: is_error_event
+        tests:
+          - not_null
+
+      - name: is_warning_event
+        tests:
+          - not_null
+
+      - name: event_domain
+        tests:
+          - accepted_values:
+              values:
+                - security
+                - system
+                - application
+                - network
+                - other
