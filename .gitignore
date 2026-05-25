@@ -1,21 +1,20 @@
-# Ignore data folders
+# Ignore ETL
+etl/
+
+# Ignore data
 logs/
 parquet_exports/
 source_data/
 
-# Ignore external projects
+# Ignore external
 BI-Foundation-main/
 
 # Python
 __pycache__/
 *.pyc
 
-# Virtual environments
+# Virtual env
 backend/.venv/
-etl/.venv/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
-
-# OS
-.DS_Store
