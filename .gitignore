@@ -1,20 +1,17 @@
-# Ignore ETL
-etl/
+# Ignore AI backend
+backend/
 
 # Ignore data
 logs/
 parquet_exports/
 source_data/
 
-# Ignore external
+# Ignore external projects
 BI-Foundation-main/
 
 # Python
 __pycache__/
 *.pyc
 
-# Virtual env
-backend/.venv/
-
-# Notebook checkpoints
-.ipynb_checkpoints/
+# Virtual envs
+etl/.venv/

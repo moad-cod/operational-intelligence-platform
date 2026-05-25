@@ -1,0 +1,63 @@
+# ----------------------------
+# 🐍 Python / uv / venv
+# ----------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# ----------------------------
+# 📦 dbt
+# ----------------------------
+target/
+dbt_packages/
+logs/
+.env
+
+# dbt artifacts
+manifest.json
+run_results.json
+catalog.json
+
+# ----------------------------
+# 🔐 Secrets / configs
+# ----------------------------
+profiles.yml
+*.env
+.env.*
+*.key
+*.pem
+
+# ----------------------------
+# 🛠 IDE / OS
+# ----------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ----------------------------
+# 🐳 Docker (optional)
+# ----------------------------
+*.pid
+*.seed
+*.pid.lock
+
+# ----------------------------
+# 📊 Data / temp files
+# ----------------------------
+*.csv
+*.parquet
+*.sqlite
+*.db
+
+# ----------------------------
+# 🚫 Ignore source_db_init content
+# ----------------------------
+source_db_init/*
+
+# ✅ BUT keep the folder itself (important for repo structure)
+!source_db_init/.gitkeep
