@@ -1,63 +1,21 @@
-# ----------------------------
-# 🐍 Python / uv / venv
-# ----------------------------
-.venv/
-venv/
+# Ignore data folders
+logs/
+parquet_exports/
+source_data/
+
+# Ignore external projects
+BI-Foundation-main/
+
+# Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.log
 
-# ----------------------------
-# 📦 dbt
-# ----------------------------
-target/
-dbt_packages/
-logs/
-.env
+# Virtual environments
+backend/.venv/
+etl/.venv/
 
-# dbt artifacts
-manifest.json
-run_results.json
-catalog.json
+# Notebook checkpoints
+.ipynb_checkpoints/
 
-# ----------------------------
-# 🔐 Secrets / configs
-# ----------------------------
-profiles.yml
-*.env
-.env.*
-*.key
-*.pem
-
-# ----------------------------
-# 🛠 IDE / OS
-# ----------------------------
-.vscode/
-.idea/
+# OS
 .DS_Store
-Thumbs.db
-
-# ----------------------------
-# 🐳 Docker (optional)
-# ----------------------------
-*.pid
-*.seed
-*.pid.lock
-
-# ----------------------------
-# 📊 Data / temp files
-# ----------------------------
-*.csv
-*.parquet
-*.sqlite
-*.db
-
-# ----------------------------
-# 🚫 Ignore source_db_init content
-# ----------------------------
-source_db_init/*
-
-# ✅ BUT keep the folder itself (important for repo structure)
-!source_db_init/.gitkeep
