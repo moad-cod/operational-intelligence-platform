@@ -1,3 +1,21 @@
+# Ignore ETL
+etl/
+
+# Ignore data
+logs/
+parquet_exports/
+source_data/
+
+# Ignore external projects
+BI-Foundation-main/
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual envs
+backend/.venv/
+
 # Virtual Environment
 .venv/
 venv/
