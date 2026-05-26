@@ -1,0 +1,62 @@
+TRIAGE CLASSIFICATION REPORT
+Generated: 2026-05-26 16:56:04
+Dataset: ../parquet_exports/feature_engineered_dataset.parquet
+Training rows: 1527
+Total dataset: 230088
+Features: 8
+
+============================================================
+MODEL METRICS
+============================================================
+
+Target: priority_encoded
+  Accuracy:     0.9424
+  Macro F1:     0.6079
+  Weighted F1:  0.9386
+  Recall Macro: 0.5884
+  Classes:      4
+  Train size:   1145
+  Test size:    382
+
+Target: urgency_encoded
+  Accuracy:     0.9398
+  Macro F1:     0.6031
+  Weighted F1:  0.9349
+  Recall Macro: 0.5940
+  Classes:      4
+  Train size:   1145
+  Test size:    382
+
+Target: impact_encoded
+  Accuracy:     0.9712
+  Macro F1:     0.7712
+  Weighted F1:  0.9676
+  Recall Macro: 0.7235
+  Classes:      3
+  Train size:   1145
+  Test size:    382
+
+============================================================
+FEATURE IMPORTANCE (Top 5 per target)
+============================================================
+
+priority_encoded:
+  retrieval_quality_score       : 0.2453
+  avg_word_length               : 0.2238
+  text_complexity_score         : 0.1790
+  corpus_quality_score          : 0.1045
+  special_char_ratio            : 0.0862
+
+urgency_encoded:
+  avg_word_length               : 0.2630
+  text_complexity_score         : 0.2090
+  retrieval_quality_score       : 0.1583
+  text_word_count               : 0.1131
+  corpus_quality_score          : 0.1015
+
+impact_encoded:
+  retrieval_quality_score       : 0.1998
+  text_complexity_score         : 0.1646
+  avg_word_length               : 0.1631
+  special_char_ratio            : 0.1489
+  corpus_quality_score          : 0.1013

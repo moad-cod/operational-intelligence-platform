@@ -1,0 +1,4 @@
+target,accuracy,macro_f1,weighted_f1,recall_macro,n_classes,n_train,n_test,train_time_s
+priority_encoded,0.9424,0.6079,0.9386,0.5884,4,1145,382,0.9
+urgency_encoded,0.9398,0.6031,0.9349,0.594,4,1145,382,1.13
+impact_encoded,0.9712,0.7712,0.9676,0.7235,3,1145,382,0.76
