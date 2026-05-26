@@ -1,0 +1,104 @@
+GOLD ML DATASET QUALITY REPORT
+Generated: 2026-05-26 17:33:44
+Source features: ../parquet_exports/feature_engineered_dataset.parquet
+Gold SLA features: ../parquet_exports/gold_sla_prediction_features.parquet
+
+============================================================
+DATASET OVERVIEW
+============================================================
+Total rows: 230,088
+Total columns: 34
+Feature columns: 30
+Derived features: 4
+
+============================================================
+TARGETS
+============================================================
+
+priority_encoded:
+  Non-null: 1527 / 230088 (0.7%)
+  2.0: 10 (0.0%)
+  3.0: 1318 (0.6%)
+  4.0: 158 (0.1%)
+  5.0: 41 (0.0%)
+
+urgency_encoded:
+  Non-null: 1527 / 230088 (0.7%)
+  2.0: 10 (0.0%)
+  3.0: 1325 (0.6%)
+  4.0: 132 (0.1%)
+  5.0: 60 (0.0%)
+
+impact_encoded:
+  Non-null: 1527 / 230088 (0.7%)
+  3.0: 1390 (0.6%)
+  4.0: 101 (0.0%)
+  5.0: 36 (0.0%)
+
+was_sla_breached:
+  Non-null: 230088 / 230088 (100.0%)
+  0: 229177 (99.6%)
+  1: 911 (0.4%)
+
+============================================================
+DERIVED FEATURES
+============================================================
+
+escalation_risk_score:
+  Type: heuristic
+  Origin: text-derived composite
+  Leakage: none
+  Description: Weighted composite of retrieval_quality_score, text_complexity_score/10, special_char_ratio, digit_ratio
+
+is_predicted_high_risk:
+  Type: heuristic
+  Origin: threshold on escalation_risk_score >= 0.6
+  Leakage: none
+  Description: Binary flag: 1 if escalation_risk_score >= 0.6, else 0
+
+text_content_density:
+  Type: derived
+  Origin: text_word_count / text_char_count
+  Leakage: none
+  Description: Information density proxy: words per character
+
+text_formatting_ratio:
+  Type: derived
+  Origin: uppercase_ratio + digit_ratio + special_char_ratio
+  Leakage: none
+  Description: Aggregate non-standard character ratio
+
+============================================================
+VALIDATION RESULTS
+============================================================
+  source_system_encoded               | null_pct        | 0.0%       | PASS
+  similarity_method_encoded           | null_pct        | 0.0%       | PASS
+  priority_encoded                    | null_pct        | 99.3%      | FAIL
+  urgency_encoded                     | null_pct        | 99.3%      | FAIL
+  impact_encoded                      | null_pct        | 99.3%      | FAIL
+  text_word_count                     | null_pct        | 0.0%       | PASS
+  text_char_count                     | null_pct        | 0.0%       | PASS
+  avg_word_length                     | null_pct        | 0.0%       | PASS
+  unique_word_ratio                   | null_pct        | 0.0%       | PASS
+  uppercase_ratio                     | null_pct        | 0.0%       | PASS
+  digit_ratio                         | null_pct        | 0.0%       | PASS
+  special_char_ratio                  | null_pct        | 0.0%       | PASS
+  repetition_ratio                    | null_pct        | 0.0%       | PASS
+  text_complexity_score               | null_pct        | 0.0%       | PASS
+  retrieval_quality_score             | null_pct        | 0.0%       | PASS
+  corpus_quality_score                | null_pct        | 0.0%       | PASS
+  similarity_confidence               | null_pct        | 0.0%       | PASS
+  was_sla_breached                    | null_pct        | 0.0%       | PASS
+  priority_score                      | null_pct        | 0.0%       | PASS
+  ticket_age_hours                    | null_pct        | 0.0%       | PASS
+  resolution_time_hours               | null_pct        | 12.5%      | WARN
+  followup_count                      | null_pct        | 0.0%       | PASS
+  avg_followup_content_length         | null_pct        | 0.0%       | PASS
+  issue_complexity_score              | null_pct        | 13.1%      | WARN
+  customer_tenure_months              | null_pct        | 13.1%      | WARN
+  previous_tickets                    | null_pct        | 13.1%      | WARN
+  escalation_risk_score               | null_pct        | 0.0%       | PASS
+  is_predicted_high_risk              | null_pct        | 0.0%       | PASS
+  text_content_density                | null_pct        | 0.0%       | PASS
+  text_formatting_ratio               | null_pct        | 0.0%       | PASS
+  uppercase_ratio                     | variance        | 0.00e+00   | FAIL

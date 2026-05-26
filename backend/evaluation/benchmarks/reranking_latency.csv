@@ -1,6 +1,6 @@
 query,retrieval_ms,rerank_ms,total_ms,hybrid_candidates,final_results,top_rerank_score
-VPN timeout after windows update,568.7,705.4,1274.1,10,5,-5.6852
-outlook login issue,412.6,667.3,1079.9,10,5,2.6056
-printer not responding,382.9,398.4,781.3,10,5,4.0841
-wifi connection unstable,360.1,528.0,888.1,10,5,3.6778
-email synchronization problem,351.2,1101.8,1453.0,10,5,7.8931
+VPN timeout after windows update,516.0,447.1,963.0,10,5,-5.6852
+outlook login issue,329.4,388.5,718.0,10,5,2.6056
+printer not responding,359.9,304.9,664.7,10,5,4.0841
+wifi connection unstable,359.4,349.4,708.8,10,5,3.6778
+email synchronization problem,335.2,655.1,990.3,10,5,7.8931
