@@ -6,15 +6,12 @@ logs/
 parquet_exports/
 source_data/
 
-# Ignore external
+# Ignore external projects
 BI-Foundation-main/
 
 # Python
 __pycache__/
 *.pyc
 
-# Virtual env
+# Virtual envs
 backend/.venv/
-
-# Notebook checkpoints
-.ipynb_checkpoints/
