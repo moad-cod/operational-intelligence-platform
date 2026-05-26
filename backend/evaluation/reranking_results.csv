@@ -1,0 +1,11 @@
+query,num_results,top_chunk_id,top_rrf_score,top_rerank_score,latency_seconds
+VPN timeout after windows update,5,doc_205775_chunk_0,0.01639,-5.6852,1.367
+outlook login issue,5,doc_213074_chunk_0,0.01587,2.6056,1.045
+printer not responding,5,doc_201662_chunk_0,0.03089,4.0841,0.98
+wifi connection unstable,5,doc_211508_chunk_0,0.01587,3.6778,1.065
+authentication failed,5,doc_223607_chunk_0,0.01639,0.3169,0.974
+email not sending,5,doc_227751_chunk_0,0.01587,6.6803,2.06
+system access denied,5,doc_221251_chunk_0,0.01639,2.8094,0.841
+slow network performance,5,doc_205456_chunk_0,0.01538,3.5189,0.781
+password reset required,5,doc_205309_chunk_0,0.01587,2.4202,0.754
+application crash on startup,5,doc_211867_chunk_0,0.01538,3.4513,0.737
