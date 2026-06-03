@@ -7,4 +7,5 @@ RUN pip install --no-cache-dir \
     sqlalchemy \
     pymysql \
     mysql-connector-python \
-    apache-airflow-providers-mysql
+    apache-airflow-providers-mysql \
+    python-dotenv

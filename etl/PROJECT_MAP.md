@@ -642,3 +642,38 @@ Goal: pyproject.toml versions match notebook requirements or vice versa
 Validation: pip install succeeds, notebook runs without version conflicts
 Deliverable: Updated pyproject.toml, updated notebook install cells
 ```
+
+---
+
+## 14. RECENT SESSION LOG
+
+### Session 2026-06-02 — dbt Fixes & Export Cleanup
+
+**Accomplished:**
+1. Fixed `stg_kaggle_tickets.sql` — `is_escalated` and `is_sla_breached` now handle `'Yes'`/`'No'` values (not just `'true'`/`'1'`)
+2. Fixed `stg_glpi_tickets.sql` — status comparisons match string values (`'closed'`, `'solved'`, etc.) not just integers
+3. Fixed `silver_tickets.sql` — `ticket_status` mapping for GLPI matches string status values
+4. Fixed `export_gold_to_parquet.py` — uses env vars, correct relative paths, no emojis
+5. Updated `pyproject.toml` — `sentence-transformers>=3.0.0`, `ragas>=0.2.6` (resolves version mismatches)
+6. Cleaned up orphan files: `airflow/data/Linux_2k.log`, `main.py`, `pipeline/README.md`, `pipeline/models/staging/README.md`
+7. Built/verified all 22 staging models, 5 silver models (as tables), 2 of 4 gold models
+8. All 422 dbt tests pass: 313 staging + 63 silver + 46 gold
+9. Export script runs successfully, creates 4 parquet files (41 MB total)
+10. Key metrics verified: `gold_sla_prediction_features` = 230,114 rows, `was_sla_breached` (GLPI) = 911, `is_escalated` now has ~50/50 split for customer_support
+
+**Known Limitations:**
+- `gold_asset_failure_risk`: built (261 rows, 35K parquet) but query is extremely slow (8-table join + window function)
+- `gold_ticket_similarity`: built (23M parquet) but underlying infrastructure join is complex and slow
+- These 2 gold models exist as tables from prior runs but their dbt builds are unreliable due to MySQL resource constraints
+
+**Pending (updated from §9):**
+- ML training scripts (XGBoost, IF, LOF) — still not started
+- Production FAISS/BM25/RRF/cross-encoder — still notebook-only
+- FastAPI serving layer — still not started
+- ~60 dbt test failures now resolved → reclassify as closed
+- `stg_ocs_software` duplicate PKs — still unresolved
+- `stg_ocs_storages_test.sql` copy-paste bug — still unresolved
+- Export script DB name — now fixed, reclassify as closed
+- Silver materialization changed to `table` — now applied, reclassify as closed
+- Credential management — still in Airflow connections todo
+- Gold `gold_asset_failure_risk` and `gold_ticket_similarity` build performance — known bottleneck

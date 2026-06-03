@@ -10,12 +10,11 @@ WITH glpi_source AS (
         closed_at,
         priority_tier AS priority,
         CASE
-            WHEN status = 6 THEN 'closed'
-            WHEN status = 5 THEN 'closed'
-            WHEN status = 4 THEN 'in_progress'
-            WHEN status = 3 THEN 'in_progress'
-            WHEN status = 2 THEN 'open'
-            WHEN status = 1 THEN 'open'
+            WHEN status IN ('closed', 'solved', 5, 6) THEN 'closed'
+            WHEN status IN ('waiting', 4) THEN 'in_progress'
+            WHEN status IN ('plan', 3) THEN 'in_progress'
+            WHEN status IN ('assign', 2) THEN 'open'
+            WHEN status IN ('new', 1) THEN 'open'
             ELSE 'unknown'
         END AS ticket_status,
         urgency_tier,

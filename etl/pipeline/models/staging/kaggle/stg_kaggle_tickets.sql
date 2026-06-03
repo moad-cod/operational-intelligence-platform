@@ -98,14 +98,12 @@ WITH support_tickets AS (
         -- =====================================
 
         CASE
-            WHEN LOWER(TRIM(escalated)) = 'true' THEN TRUE
-            WHEN escalated = '1' THEN TRUE
+            WHEN LOWER(TRIM(escalated)) IN ('true', 'yes', '1') THEN TRUE
             ELSE FALSE
         END AS is_escalated,
 
         CASE
-            WHEN LOWER(TRIM(sla_breached)) = 'true' THEN TRUE
-            WHEN sla_breached = '1' THEN TRUE
+            WHEN LOWER(TRIM(sla_breached)) IN ('true', 'yes', '1') THEN TRUE
             ELSE FALSE
         END AS is_sla_breached,
 

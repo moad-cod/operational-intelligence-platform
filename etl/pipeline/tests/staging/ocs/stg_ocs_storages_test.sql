@@ -1,33 +1,37 @@
 SELECT *
 
-FROM {{ ref('stg_ocs_software') }}
+FROM {{ ref('stg_ocs_storages') }}
 
-WHERE software_pk IS NULL
+WHERE storage_pk IS NULL
 
-   OR software_id IS NULL
+   OR storage_id IS NULL
 
    OR hardware_id IS NULL
 
-   OR architecture NOT IN (
-        '64bit',
-        '32bit',
-        'unknown'
+   OR storage_type NOT IN (
+        'SSD',
+        'NVMe',
+        'HDD',
+        'SATA',
+        'SAS',
+        'Other'
    )
 
-   OR software_category NOT IN (
-        'office',
-        'browser',
-        'security',
-        'database',
-        'development',
-        'virtualization',
-        'other'
+   OR manufacturer_group NOT IN (
+        'Seagate',
+        'Western Digital',
+        'Samsung',
+        'Toshiba',
+        'Kingston',
+        'Intel',
+        'Other'
    )
 
-   OR software_risk_level NOT IN (
-        'critical',
+   OR storage_size_tier NOT IN (
         'high',
-        'normal'
+        'medium',
+        'low',
+        'unknown'
    )
 
    OR source_year NOT IN (
