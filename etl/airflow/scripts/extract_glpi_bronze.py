@@ -1,5 +1,7 @@
-import pandas as pd
+import os, pandas as pd
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+load_dotenv()
 
 # =========================================
 # YEARS
@@ -12,7 +14,10 @@ years = [2013, 2014, 2015]
 # =========================================
 
 SOURCE_TEMPLATE = (
-    "mysql+pymysql://mouad:secret@glpi_ocs_db:3306/db_glpi_{year}"
+    f"mysql+pymysql://{os.getenv('PLATFORM_DB_USER', 'mouad')}:"
+    f"{os.getenv('PLATFORM_DB_PASSWORD', 'secret')}@"
+    f"{os.getenv('PLATFORM_DB_HOST', 'glpi_ocs_db')}:"
+    f"{os.getenv('PLATFORM_DB_PORT', '3306')}/db_glpi_{{year}}"
 )
 
 # =========================================
@@ -20,7 +25,10 @@ SOURCE_TEMPLATE = (
 # =========================================
 
 target_engine = create_engine(
-    "mysql+pymysql://warehouse:warehouse_pass@warehouse_db:3306/it_data_warehouse"
+    f"mysql+pymysql://{os.getenv('WAREHOUSE_DB_USER', 'warehouse')}:"
+    f"{os.getenv('WAREHOUSE_DB_PASSWORD', 'warehouse_pass')}@"
+    f"{os.getenv('WAREHOUSE_DB_HOST', 'warehouse_db')}:"
+    f"{os.getenv('WAREHOUSE_DB_PORT', '3306')}/it_data_warehouse"
 )
 
 # =========================================

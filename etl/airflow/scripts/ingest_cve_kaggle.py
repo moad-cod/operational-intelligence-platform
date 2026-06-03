@@ -1,63 +1,12 @@
-import pandas as pd
-from sqlalchemy import create_engine
 import os
+from kaggle_base import ingest_csv
 
-# -----------------------------
-# Configuration MySQL
-# -----------------------------
-
-MYSQL_USER = "warehouse"
-MYSQL_PASSWORD = "warehouse_pass"
-MYSQL_HOST = "warehouse_db"
-MYSQL_PORT = "3306"
-
-DATABASE_NAME = "it_data_warehouse"
-
-# -----------------------------
-# Connexion MySQL
-# -----------------------------
-
-engine = create_engine(
-    f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{DATABASE_NAME}"
-)
-
-# -----------------------------
-# Ingestion CVE Dataset
-# -----------------------------
+def drop_dup_cols(df):
+    return df.loc[:, ~df.columns.duplicated()]
 
 def ingest():
-
-    path_cve = "/opt/airflow/data/cve.csv"
-
-    if not os.path.exists(path_cve):
-        print(f"❌ Fichier introuvable : {path_cve}")
-        return
-
-    print("📂 Lecture cve.csv")
-
-    df = pd.read_csv(path_cve)
-
-    print(f"📊 Nombre de lignes : {len(df)}")
-    print(f"📊 Nombre de colonnes : {len(df.columns)}")
-
-    # Sécurité : suppression des colonnes dupliquées
-    df = df.loc[:, ~df.columns.duplicated()]
-
-    # Export MySQL
-    df.to_sql(
-        "raw_cve_data",
-        con=engine,
-        if_exists="replace",
-        index=False,
-        chunksize=5000
-    )
-
-    print("✅ Table raw_cve_data créée avec succès")
-
-
-# -----------------------------
-# Main
-# -----------------------------
+    path = os.getenv("CVE_CSV_PATH", "/opt/airflow/data/cve.csv")
+    ingest_csv(path, "raw_cve_data", transform_fn=drop_dup_cols)
 
 if __name__ == "__main__":
     ingest()

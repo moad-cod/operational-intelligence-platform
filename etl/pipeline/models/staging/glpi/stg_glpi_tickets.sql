@@ -73,7 +73,7 @@ cleaned AS (
 
         CASE
 
-            WHEN status IN (5, 6)
+            WHEN status IN ('closed', 'solved', 5, 6)
                  THEN TRUE
 
             ELSE FALSE
@@ -82,7 +82,7 @@ cleaned AS (
 
         CASE
 
-            WHEN status = 6
+            WHEN status IN ('closed', 6)
                  THEN TRUE
 
             ELSE FALSE
@@ -91,7 +91,7 @@ cleaned AS (
 
         CASE
 
-            WHEN status = 4
+            WHEN status IN ('waiting', 4)
                  THEN TRUE
 
             ELSE FALSE
