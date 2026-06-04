@@ -1,11 +1,11 @@
 query,num_results,top_chunk_id,top_rrf_score,top_rerank_score,latency_seconds
-VPN timeout after windows update,5,doc_205775_chunk_0,0.01639,-5.6852,0.999
-outlook login issue,5,doc_213074_chunk_0,0.01587,2.6056,0.759
-printer not responding,5,doc_201662_chunk_0,0.03089,4.0841,0.735
-wifi connection unstable,5,doc_211508_chunk_0,0.01587,3.6778,0.731
-authentication failed,5,doc_223607_chunk_0,0.01639,0.3169,0.637
-email not sending,5,doc_227751_chunk_0,0.01587,6.6803,1.374
-system access denied,5,doc_221251_chunk_0,0.01639,2.8094,0.563
-slow network performance,5,doc_205456_chunk_0,0.01538,3.5189,0.582
-password reset required,5,doc_205309_chunk_0,0.01587,2.4202,0.568
-application crash on startup,5,doc_211867_chunk_0,0.01538,3.4513,0.634
+VPN timeout after windows update,5,doc_204248_chunk_0,0.01639,-5.2885,4.473
+outlook login issue,5,doc_227304_chunk_0,0.01587,2.9042,4.058
+printer not responding,5,doc_200135_chunk_0,0.01449,4.9674,3.556
+wifi connection unstable,5,doc_200385_chunk_0,0.01587,4.6754,2.21
+authentication failed,5,doc_223404_chunk_0,0.01613,0.211,4.071
+email not sending,5,doc_226224_chunk_0,0.01587,6.3554,3.052
+system access denied,5,doc_219724_chunk_0,0.01639,3.0145,4.424
+slow network performance,5,doc_225077_chunk_0,0.01515,5.0803,4.247
+password reset required,5,doc_207443_chunk_0,0.01493,4.4948,2.872
+application crash on startup,5,doc_218769_chunk_0,0.01429,4.9014,2.018
