@@ -343,6 +343,26 @@ RAGAS Evaluation (faithfulness + answer relevancy)
 | **Critical Issue** | GLPI `ticket_subject` and `ticket_body` are NULL for ALL rows. No real NLP text. |
 | **Downstream** | FAISS index, BM25 index (not implemented) |
 
+#### gold_ticket_similarity_v2
+| Property | Value |
+|----------|-------|
+| **Purpose** | Production RAG Knowledge Base — one row per resolved ticket with cleaned problem_text (embedding source) and solution_text (retrieved answer) |
+| **Sources** | `silver_ticket_corpus`, `silver_triage_features` |
+| **Rows** | 108,536 (after quality filters: ≥20 chars, resolved/closed only, GLPI excluded) |
+| **Distribution** | customer_support: 79,999, multi_lang: 28,537 (GLPI excluded — see "Why GLPI is Excluded") |
+| **RAG ID** | `MD5(event_pk)` — unique, deterministic, stable across rebuilds |
+| **problem_text** | Kaggle: ticket_subject + ticket_body |
+| **solution_text** | customer_support: resolution_notes. multi_lang: answer |
+| **Metadata** | category, priority, language, product, queue, software_version, region, tags |
+| **Triage** | priority_tier, triage_priority, escalation_risk_level |
+| **Ranking** | resolution_time_hours, first_response_time_hours, sla_risk_score |
+| **SLA** | is_sla_breached, is_escalated |
+| **Customer** | customer_segment, subscription_type, operating_system, browser |
+| **Governance** | source_dataset, created_at, resolved_at |
+| **Downstream** | SentenceTransformers, Qdrant/FAISS, BM25, Cross-Encoder, Groq generation |
+| **Architecture Rule** | Built exclusively on Silver models — no direct staging/bronze refs |
+| **Why GLPI is Excluded** | GLPI tickets are operational ITSM records without native ticket_subject or ticket_body. Their problem_text/solution_text are both reconstructed from followup content, lacking the rich, natural-language problem-solution pairs needed for semantic search, embedding, and RAG. Only Kaggle support datasets (customer_support_tickets_200k, dataset_tickets_multi_lang) are retained. |
+
 #### gold_asset_failure_risk
 | Property | Value |
 |----------|-------|
@@ -642,3 +662,105 @@ Goal: pyproject.toml versions match notebook requirements or vice versa
 Validation: pip install succeeds, notebook runs without version conflicts
 Deliverable: Updated pyproject.toml, updated notebook install cells
 ```
+<<<<<<< Updated upstream
+=======
+
+---
+
+## 14. RECENT SESSION LOG
+
+### Session 2026-06-02 — dbt Fixes & Export Cleanup
+
+**Accomplished:**
+1. Fixed `stg_kaggle_tickets.sql` — `is_escalated` and `is_sla_breached` now handle `'Yes'`/`'No'` values (not just `'true'`/`'1'`)
+2. Fixed `stg_glpi_tickets.sql` — status comparisons match string values (`'closed'`, `'solved'`, etc.) not just integers
+3. Fixed `silver_tickets.sql` — `ticket_status` mapping for GLPI matches string status values
+4. Fixed `export_gold_to_parquet.py` — uses env vars, correct relative paths, no emojis
+5. Updated `pyproject.toml` — `sentence-transformers>=3.0.0`, `ragas>=0.2.6` (resolves version mismatches)
+6. Cleaned up orphan files: `airflow/data/Linux_2k.log`, `main.py`, `pipeline/README.md`, `pipeline/models/staging/README.md`
+7. Built/verified all 22 staging models, 5 silver models (as tables), 2 of 4 gold models
+8. All 422 dbt tests pass: 313 staging + 63 silver + 46 gold
+9. Export script runs successfully, creates 4 parquet files (41 MB total)
+10. Key metrics verified: `gold_sla_prediction_features` = 230,114 rows, `was_sla_breached` (GLPI) = 911, `is_escalated` now has ~50/50 split for customer_support
+
+**Known Limitations:**
+- `gold_asset_failure_risk`: built (261 rows, 35K parquet) but query is extremely slow (8-table join + window function)
+- `gold_ticket_similarity`: built (23M parquet) but underlying infrastructure join is complex and slow
+- These 2 gold models exist as tables from prior runs but their dbt builds are unreliable due to MySQL resource constraints
+
+**Pending (updated from §9):**
+- ML training scripts (XGBoost, IF, LOF) — still not started
+- Production FAISS/BM25/RRF/cross-encoder — still notebook-only
+- FastAPI serving layer — still not started
+- ~60 dbt test failures now resolved → reclassify as closed
+- `stg_ocs_software` duplicate PKs — still unresolved
+- `stg_ocs_storages_test.sql` copy-paste bug — still unresolved
+- Export script DB name — now fixed, reclassify as closed
+- Silver materialization changed to `table` — now applied, reclassify as closed
+- Credential management — still in Airflow connections todo
+- Gold `gold_asset_failure_risk` and `gold_ticket_similarity` build performance — known bottleneck
+
+---
+
+## 15. RECENT SESSION LOG
+
+### Session 2026-06-06 — gold_ticket_similarity_v2 Implementation
+
+**New Models:**
+1. `silver_followups` — Aggregates GLPI followup content per (ticket_id, source_year) for use as GLPI ticket text corpus. 157 rows.
+2. `silver_ticket_corpus` — Prepares problem_text and solution_text from all ticket sources. Joins silver_tickets + stg_kaggle_metadata + stg_glpi_metadata + silver_followups. 230,114 rows.
+3. `gold_ticket_similarity_v2` — Production RAG Knowledge Base. References ONLY silver layer models. Applies quality filters (≥20 chars, resolved/closed). 108,766 rows.
+
+**Architecture:**
+- Medallion: Silver_ticket_corpus/silver_followups (Silver) → gold_ticket_similarity_v2 (Gold)
+- No direct staging references in gold model — pure Silver-layer dependency
+- No embedding generation, no similarity computation inside dbt
+- rag_id = MD5(event_pk) — deterministic, stable across rebuilds
+
+**Test Results:**
+- 10/10 v2 tests PASS (unique rag_id, not_null problem_text/solution_text, accepted_values for source_dataset, is_sla_breached, is_escalated)
+- 56/56 total gold tests PASS (original 46 + 10 new)
+- No regressions
+
+**Downstream Consumers:**
+- SentenceTransformers (embedding generation)
+- Qdrant / FAISS (vector storage)
+- BM25 + RRF (hybrid search)
+- Cross-Encoder reranking
+- Groq-based AI ticket recommendation
+
+**Known Limitations:**
+- GLPI tickets (230 rows) relied on followup content only — excluded in v2.1 (2026-06-06)
+- multi_lang dataset (28,537 rows) has no timestamps (created_at/resolved_at are NULL — quality filter accepts them since ticket_status = 'resolved' is hardcoded)
+- communication_channel unavailable in silver_tickets — excluded from v2
+
+### Session 2026-06-06 (Part 2) — GLPI Exclusion from gold_ticket_similarity_v2
+
+**Change:**
+- GLPI records are now excluded from `gold_ticket_similarity_v2`
+- Filter applied in first CTE (`ticket_base`) before LEFT JOIN to `silver_triage_features`
+- Filter column: `source_system != 'GLPI'` (available in `silver_ticket_corpus`)
+
+**Rationale:**
+- GLPI tickets have NULL ticket_subject and ticket_body
+- problem_text and solution_text both reconstructed from followup content only
+- Results in low-quality semantic representations for embedding and RAG
+- Only Kaggle support datasets (customer_support_tickets_200k, dataset_tickets_multi_lang) retained
+
+**Row Count Impact:**
+- Before: 108,766 (79,999 customer_support + 28,537 multi_lang + 230 GLPI)
+- After: 108,536 (79,999 customer_support + 28,537 multi_lang)
+- Removed: 230 GLPI records
+
+**Test Results:**
+- 10/10 v2 tests PASS (accepted_values for source_dataset updated — removed 'GLPI')
+- No regressions
+
+**Schema Changes:**
+- `gold/schema.yml`: accepted_values for source_dataset now only: customer_support_tickets_200k, dataset_tickets_multi_lang
+- Column descriptions updated: urgency_tier, impact_tier, waiting_duration, followup_count, avg_followup_content_length marked as always NULL/0 (GLPI excluded)
+
+**Lineage:**
+- gloss: Silver_ticket_corpus (filtered source_system != 'GLPI') + Silver_triage_features → gold_ticket_similarity_v2
+- No silver model modifications required — filter applied in gold model's first CTE
+>>>>>>> Stashed changes

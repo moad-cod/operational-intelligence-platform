@@ -23,6 +23,7 @@ engine = create_engine(
 gold_tables = [
     "gold_ticket_similarity",
     "gold_sla_prediction_features",
+    "gold_ticket_similarity_v2",
     "gold_asset_failure_risk",
     "gold_user_activity_anomalies"
 ]

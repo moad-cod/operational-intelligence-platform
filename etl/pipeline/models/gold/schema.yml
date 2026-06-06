@@ -367,3 +367,187 @@ models:
 
       - name: is_anomaly_lof
         description: "LOF anomaly flag; populated by Python"
+
+  - name: gold_ticket_similarity_v2
+    description: >
+      PRODUCTION RAG KNOWLEDGE BASE — one row per resolved ticket with cleaned
+      problem_text (embedding source) and solution_text (retrieved answer).
+      GLPI records EXCLUDED: GLPI tickets are operational ITSM records lacking
+      complete, high-quality problem-solution pairs. Only Kaggle support
+      datasets are retained for semantic search, embedding, and RAG.
+      Consumed by SentenceTransformers, Qdrant/FAISS, BM25, Cross-Encoder
+      reranking, and Groq-based AI ticket recommendation systems.
+      Built exclusively on Silver layer models (silver_ticket_corpus,
+      silver_triage_features) — no direct staging references.
+    columns:
+
+      - name: rag_id
+        description: "Unique document identifier for vector database ingestion"
+        tests:
+          - not_null
+          - unique
+
+      - name: problem_text
+        description: >
+          Ticket problem description intended for embedding generation.
+          Non-null, cleaned, minimum 20 characters.
+          Source: ticket_subject + ticket_body (Kaggle), followup_text (GLPI).
+        tests:
+          - not_null
+
+      - name: solution_text
+        description: >
+          Ticket solution description returned after retrieval.
+          Non-null, human-readable, minimum 20 characters.
+          Source: resolution_notes (customer_support), answer (multi_lang),
+          followup_text (GLPI).
+        tests:
+          - not_null
+
+      - name: category
+        description: "Ticket category for vector metadata filtering"
+
+      - name: priority
+        description: "Ticket priority level"
+
+      - name: language
+        description: "Ticket language"
+
+      - name: product
+        description: "Product associated with the ticket (customer_support only; NULL otherwise)"
+
+      - name: queue
+        description: "Support queue (multi_lang only; NULL otherwise)"
+
+      - name: software_version
+        description: "Software version (multi_lang only; NULL otherwise)"
+
+      - name: region
+        description: "Geographic region (customer_support only; NULL otherwise)"
+
+      - name: tag_1
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_2
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_3
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_4
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_5
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_6
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_7
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: tag_8
+        description: "Classification tag (multi_lang only; NULL otherwise)"
+
+      - name: priority_tier
+        description: "Ticket priority tier for ranking"
+
+      - name: urgency_tier
+        description: "Ticket urgency tier (always NULL — GLPI excluded)"
+
+      - name: impact_tier
+        description: "Ticket impact tier (always NULL — GLPI excluded)"
+
+      - name: triage_priority
+        description: "Derived triage priority from silver_triage_features"
+
+      - name: escalation_risk_level
+        description: "Derived escalation risk level from silver_triage_features"
+
+      - name: age_severity
+        description: "Ticket age severity from silver_triage_features"
+
+      - name: customer_type
+        description: "Customer type classification from silver_triage_features"
+
+      - name: resolution_time_hours
+        description: "Hours to resolution — lower is better for reranking"
+
+      - name: waiting_duration
+        description: "Total waiting duration in seconds (always NULL — GLPI excluded)"
+
+      - name: first_response_time_hours
+        description: "Kaggle-only: first response time in hours"
+
+      - name: sla_risk_score
+        description: "Derived SLA risk score from silver_triage_features"
+
+      - name: escalation_probability
+        description: "Derived escalation probability from silver_triage_features"
+
+      - name: is_sla_breached
+        description: "Whether the ticket breached SLA"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: is_escalated
+        description: "Whether the ticket was escalated"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: issue_complexity_score
+        description: "Kaggle-only: complexity score for ranking context"
+
+      - name: customer_satisfaction_score
+        description: "Kaggle-only: customer satisfaction rating"
+
+      - name: customer_tenure_months
+        description: "Kaggle-only: customer tenure in months"
+
+      - name: previous_tickets
+        description: "Kaggle-only: number of previous tickets by this customer"
+
+      - name: customer_segment
+        description: "Kaggle-only: customer segment for context-aware retrieval"
+
+      - name: subscription_type
+        description: "Kaggle-only: subscription plan"
+
+      - name: operating_system
+        description: "Kaggle-only: customer OS"
+
+      - name: browser
+        description: "Kaggle-only: customer browser"
+
+      - name: followup_count
+        description: "Number of followups on this ticket (always 0 — GLPI excluded)"
+
+      - name: avg_followup_content_length
+        description: "Average character length of followup content (always 0 — GLPI excluded)"
+
+      - name: source_dataset
+        description: "Source dataset identifier for traceability"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - customer_support_tickets_200k
+                - dataset_tickets_multi_lang
+
+      - name: created_at
+        description: "Ticket creation timestamp for freshness scoring"
+
+      - name: resolved_at
+        description: "Ticket resolution timestamp"
+
+      - name: source_system
+        description: "Source system (same as source_dataset)"
+        tests:
+          - not_null
+
+      - name: source_id
+        description: "Original ticket ID in the source system"
+        tests:
+          - not_null
