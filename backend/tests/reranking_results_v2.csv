@@ -1,0 +1,11 @@
+query,num_results,top_chunk_id,top_rrf_score,top_rerank_score,latency_seconds
+VPN connection fails after password reset,5,doc_86071_chunk_0,0.03227,4.5888,3.754
+outlook login issue,5,doc_80186_chunk_0,0.03178,4.4155,5.853
+printer not responding,5,doc_25854_chunk_0,0.03279,5.1231,7.564
+wifi connection unstable,5,doc_55408_chunk_0,0.01639,5.6153,6.514
+authentication failed,5,doc_44198_chunk_0,0.01562,-1.3672,1.732
+email not sending,5,doc_47232_chunk_0,0.03128,5.1779,4.912
+system access denied,5,doc_55450_chunk_0,0.01538,3.6028,3.541
+slow network performance,5,doc_57125_chunk_0,0.01515,4.9641,6.494
+password reset required,5,doc_51332_chunk_0,0.01515,3.347,3.553
+application crash on startup,5,doc_99672_chunk_0,0.01613,3.762,3.224
