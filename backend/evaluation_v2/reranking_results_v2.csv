@@ -1,0 +1,11 @@
+query,num_results,top_rag_id,top_rrf_score,top_rerank_score,solution_length,latency_seconds
+VPN connection fails after password reset,5,f9869bf85ba471f62a745e01355ab4ca,0.03227,4.9343,307,4.136
+outlook login issue,5,6bd351ce88c0a3cbe547babf5ef74f62,0.03178,4.2732,486,5.776
+printer not responding,5,6e41241b692c1b88441d42ab34e3a81b,0.03279,4.9674,345,4.532
+wifi connection unstable,5,56905b8cf49b82efcfbd1bc9486bb7ec,0.01639,5.4276,476,4.783
+authentication failed,5,645e4699c3bb5ec51689e1209851812b,0.01333,-3.3656,60,1.115
+email not sending,5,0d893c0251664449d160788fa6c2915e,0.03128,6.3554,558,4.582
+system access denied,5,76497364e716ac2641a6206ca3e35889,0.01639,3.0145,100,1.829
+slow network performance,5,5abc494e3c7c96012074d68a6d9d4913,0.01515,5.2878,323,5.193
+password reset required,5,d17b1c16b6ec991134b4b4ea3b301599,0.01515,3.2198,525,2.487
+application crash on startup,5,444198e4b744e738f615cd8ed3ca3755,0.01613,4.9725,373,2.561
