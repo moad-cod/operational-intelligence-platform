@@ -1,0 +1,3 @@
+# Data directories - not tracked in git
+source_data/
+export_data/
