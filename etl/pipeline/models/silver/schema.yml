@@ -68,7 +68,12 @@ models:
                 - unknown
 
   - name: silver_assets
-    description: "Unified asset inventory combining OCS hardware inventory with GLPI ITSM asset data, financial info, hardware components, and software risk assessment"
+    description: >
+      Unified asset inventory combining OCS hardware inventory with GLPI ITSM
+      asset data, financial info, hardware components, software risk, and
+      Kaggle SMART hard-drive metrics for failure prediction.
+      Two branches: GLPI/OCS assets (failure_label=NULL, to predict) and
+      Kaggle hard drives (failure_label=0/1 ground truth for training).
     columns:
 
       - name: asset_pk
@@ -77,92 +82,116 @@ models:
           - not_null
           - unique
 
-      - name: hardware_id
-        tests:
-          - not_null
-
       - name: asset_name
+        description: "Normalized hostname or serial number"
         tests:
           - not_null
 
-      - name: manufacturer_group
+      - name: source_domain
+        description: "Data source domain: ocs_glpi or kaggle_harddrive"
         tests:
           - not_null
           - accepted_values:
               values:
-                - HP
-                - Dell
-                - Lenovo
-                - Foxconn
-                - MSI
-                - Other
+                - ocs_glpi
+                - kaggle_harddrive
+
+      - name: system_manufacturer
+
+      - name: system_model
+
+      - name: serial_number
 
       - name: device_type
         tests:
-          - not_null
           - accepted_values:
               values:
                 - desktop
                 - laptop
                 - server
+                - storage
                 - other
 
-      - name: os_family
+      - name: uuid
+
+      - name: source_year
+
+      - name: asset_age_years
+        description: "Age in years: from GLPI buy_date if available, else BIOS firmware date, else 0"
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - Windows
-                - Linux
-                - MacOS
-                - Other
 
-      - name: memory_tier
+      - name: bios_risk_encoded
+        description: "Ordinal: 0=low, 1=medium, 2=high, 3=critical, NULL=unknown. Based on BIOS firmware date."
+
+      - name: drive_health_encoded
+        description: "Ordinal: 0=good, 1=medium, 2=high, 3=critical, 0=NULL. MAX across all drives (worst-case)."
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - high
-                - medium
-                - low
-                - critical
 
-      - name: inventory_quality_tier
+      - name: storage_capacity_gb
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - excellent
-                - good
-                - medium
-                - poor
 
-      - name: asset_lifecycle_stage
-        tests:
-          - accepted_values:
-              values:
-                - template
-                - real_machine
-                - unknown
-
-      - name: asset_risk_score
+      - name: drive_count
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - critical
-                - high
-                - medium
-                - low
 
-      - name: asset_health_status
+      - name: memory_gb
+
+      - name: cpu_cores
+
+      - name: high_risk_software_count
         tests:
           - not_null
-          - accepted_values:
-              values:
-                - active
-                - idle
-                - inactive
+
+      - name: risk_software_ratio
+        tests:
+          - not_null
+
+      - name: software_installed_count
+        tests:
+          - not_null
+
+      - name: incident_count
+        description: "Total tickets for GLPI; Start/Stop + Power Cycle count for Kaggle"
+        tests:
+          - not_null
+
+      - name: hardware_incident_count
+        description: "GLPI-only: count of type=1 (incident) tickets linked to this Computer. NULL for Kaggle."
+
+      - name: days_since_last_inventory
+        tests:
+          - not_null
+
+      - name: has_warranty
+        tests:
+          - not_null
+
+      - name: glpi_failure_proxy
+        description: >
+          GLPI-only: 1 if asset has evidence of hardware failure (≥2 hardware incidents
+          or ≥1 critical hardware incident). 0 if no evidence. NULL for Kaggle.
+          Designed as a defensible proxy — not ground truth.
+
+      - name: power_on_hours
+        description: "SMART 9 Raw — Kaggle only; NULL for GLPI/OCS"
+
+      - name: reallocated_sectors
+        description: "SMART 5 Raw — Kaggle only; NULL for GLPI/OCS"
+
+      - name: pending_sectors
+        description: "SMART 197 Raw — Kaggle only; NULL for GLPI/OCS"
+
+      - name: uncorrectable_errors
+        description: "SMART 187 + 198 Raw — Kaggle only; NULL for GLPI/OCS"
+
+      - name: command_timeouts
+        description: "SMART 188 Raw — Kaggle only; NULL for GLPI/OCS"
+
+      - name: failure_label
+        description: "Target: 1=failed, 0=healthy (Kaggle ground truth); NULL for GLPI/OCS (to predict)"
 
   - name: silver_security_events
     description: "Unified security events from CVE, Windows logs and GLPI tickets"

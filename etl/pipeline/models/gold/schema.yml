@@ -219,38 +219,64 @@ models:
 
   - name: gold_asset_failure_risk
     description: >
-      One-row-per-asset feature dataset for unsupervised anomaly detection.
-      Combines OCS hardware inventory, BIOS age, drive/storage health,
-      software risk profile, GLPI financial data, and ticket incident history.
+      One-row-per-asset risk assessment for predictive maintenance.
+      Sources: silver_assets only (all feature engineering done in silver).
       rule_based_risk_score is the heuristic baseline for comparison with
-      Isolation Forest anomaly_score.
+      Isolation Forest anomaly_score. risk_tier provides business-friendly
+      triage categorization. risk_explanation documents why each asset scored
+      as it did.
     columns:
 
-      - name: hardware_pk
-        description: "Primary key from OCS hardware staging"
+      - name: asset_pk
+        description: "Unique asset identifier from silver_assets"
         tests:
           - not_null
           - unique
 
       - name: asset_name
-        description: "Normalized hostname or fallback identifier"
+        description: "Normalized hostname or serial number"
         tests:
           - not_null
 
-      - name: device_age_years
-        description: "BIOS age in years"
+      - name: source_domain
+        description: "Data source domain: ocs_glpi or kaggle_harddrive"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - ocs_glpi
+
+      - name: source_year
+        description: "Source year from OCS inventory"
+
+      - name: asset_age_years
+        description: "Age in years (from GLPI buy_date or BIOS date)"
         tests:
           - not_null
 
-      - name: bios_risk_level_encoded
-        description: "Ordinal: 0=unknown, 1=low, 2=medium, 3=high, 4=critical"
+      - name: bios_risk_encoded
+        description: "Ordinal: 0=low, 1=medium, 2=high, 3=critical, NULL=unknown"
+
+      - name: drive_health_encoded
+        description: "Worst-case drive health across all fixed drives"
         tests:
           - not_null
 
-      - name: worst_drive_health_encoded
-        description: "Ordinal: 0=unknown, 1=healthy, 2=medium, 3=high, 4=critical"
+      - name: storage_capacity_gb
+        description: "Total capacity of fixed drives in GB"
         tests:
           - not_null
+
+      - name: drive_count
+        description: "Number of fixed drives"
+        tests:
+          - not_null
+
+      - name: memory_gb
+        description: "Total RAM in GB"
+
+      - name: cpu_cores
+        description: "Number of CPU cores"
 
       - name: high_risk_software_count
         description: "Count of software with risk level critical or high"
@@ -262,29 +288,67 @@ models:
         tests:
           - not_null
 
-      - name: incident_count
-        description: "Count of GLPI tickets referencing this asset"
+      - name: software_installed_count
+        description: "Total count of installed software"
         tests:
           - not_null
+
+      - name: incident_count
+        description: "Total ticket count for this asset"
+        tests:
+          - not_null
+
+      - name: hardware_incident_count
+        description: "Hardware-specific incident count (type=1, Computer-linked)"
 
       - name: days_since_last_inventory
         description: "Days since OCS last inventoried this asset"
         tests:
           - not_null
 
-      - name: rule_based_risk_score
-        description: "Heuristic risk score baseline (4-16 range); comparison column for ML output"
+      - name: has_warranty
+        description: "Whether the asset has an active warranty"
         tests:
           - not_null
+
+      - name: glpi_failure_proxy
+        description: >
+          1 if hardware failure evidence detected (≥2 hw incidents or ≥1 critical),
+          0 otherwise. Defensible proxy — not ground truth.
+
+      - name: system_manufacturer
+        description: "Hardware manufacturer"
+
+      - name: system_model
+        description: "Hardware model"
+
+      - name: device_type
+        description: "Type: desktop, laptop, server, other"
+
+      - name: rule_based_risk_score
+        description: "Heuristic risk score baseline (5-20 range); comparison column for ML output"
+        tests:
+          - not_null
+
+      - name: risk_tier
+        description: "Business-friendly categorization: info, low, medium, high"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - high
+                - medium
+                - low
+                - info
+
+      - name: risk_explanation
+        description: "Semicolon-separated human-readable reasons for the risk score"
 
       - name: anomaly_score
         description: "Isolation Forest anomaly score (lower = more anomalous); populated by Python"
 
       - name: is_anomaly
         description: "Boolean anomaly flag from Isolation Forest; populated by Python"
-        tests:
-          - accepted_values:
-              values: [0, 1]
 
   - name: gold_user_activity_anomalies
     description: >

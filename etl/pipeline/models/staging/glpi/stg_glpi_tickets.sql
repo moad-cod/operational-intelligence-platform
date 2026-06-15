@@ -179,6 +179,74 @@ cleaned AS (
         END AS closure_time_hours,
 
         -- =====================================
+        -- TICKET TYPE (ITIL: 1=incident, 2=request)
+        -- =====================================
+
+        CASE
+            WHEN type = 1 THEN 'incident'
+            WHEN type = 2 THEN 'request'
+            ELSE 'unknown'
+        END AS ticket_type,
+
+        CASE
+            WHEN type = 1 THEN TRUE
+            ELSE FALSE
+        END AS is_incident,
+
+        -- =====================================
+        -- LINKED ITEM (Computer, etc.)
+        -- =====================================
+
+        CASE
+            WHEN itemtype IS NULL OR TRIM(itemtype) = '' THEN NULL
+            ELSE TRIM(itemtype)
+        END AS item_type,
+
+        CASE
+            WHEN items_id IS NULL OR items_id <= 0 THEN NULL
+            ELSE items_id
+        END AS items_id,
+
+        -- =====================================
+        -- CATEGORY
+        -- =====================================
+
+        CASE
+            WHEN itilcategories_id IS NULL OR itilcategories_id <= 0 THEN NULL
+            ELSE itilcategories_id
+        END AS itilcategories_id,
+
+        -- =====================================
+        -- CONTENT (ticket description text)
+        -- =====================================
+
+        CASE
+            WHEN content IS NULL THEN NULL
+            WHEN TRIM(content) = '' THEN NULL
+            WHEN TRIM(content) IN ('-', 'null', 'NULL') THEN NULL
+            ELSE TRIM(content)
+        END AS content,
+
+        -- =====================================
+        -- RAW SCORES (for numerical filtering in silver/gold)
+        -- =====================================
+
+        CASE
+            WHEN priority IS NULL OR priority < 1 THEN 1
+            ELSE priority
+        END AS priority,
+
+        CASE
+            WHEN urgency IS NULL OR urgency < 1 THEN 1
+            ELSE urgency
+        END AS urgency,
+
+        CASE
+            WHEN impact IS NULL OR impact < 1 THEN 1
+            ELSE impact
+        END AS impact,
+
+        -- =====================================
         -- PRIORITY FEATURES
         -- =====================================
 

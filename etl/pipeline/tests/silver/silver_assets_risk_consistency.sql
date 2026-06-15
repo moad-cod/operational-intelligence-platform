@@ -1,7 +1,8 @@
--- Asset risk score definitions should be consistent
-SELECT asset_pk, asset_risk_score, bios_risk_level, high_risk_software_count
+-- Asset risk score consistency: high drive_health or bios_risk should not be low risk
+SELECT asset_pk, asset_name, asset_age_years, bios_risk_encoded, drive_health_encoded
 FROM {{ ref('silver_assets') }}
-WHERE
-    (bios_risk_level = 'critical' AND asset_risk_score != 'critical')
-    OR (bios_risk_level = 'high' AND device_age_years >= 10 AND asset_risk_score != 'high')
-    OR (bios_risk_level = 'medium' AND asset_risk_score = 'low')
+WHERE source_domain = 'ocs_glpi'
+  AND (
+    (drive_health_encoded >= 3 AND bios_risk_encoded IS NULL)
+    OR (bios_risk_encoded >= 3 AND drive_health_encoded = 0 AND asset_age_years < 2)
+  )

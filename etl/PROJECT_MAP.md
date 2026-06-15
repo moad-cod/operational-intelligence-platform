@@ -265,7 +265,7 @@ dataset_tickets_* ─────→ stg_kaggle_tickets ┘
 |-------|--------|----------------|--------------|
 | Staging | 22 | view | Bronze sources (22 tables) |
 | Silver | 5 | view | Staging models |
-| Gold | 4 | table | Staging models + 1 bronze direct ref |
+| Gold | 4 | table | Silver models only (no staging/bronze refs) |
 
 **Config** (`pipeline/dbt_project.yml`):
 - staging: `+materialized: view`
@@ -346,11 +346,13 @@ RAGAS Evaluation (faithfulness + answer relevancy)
 #### gold_asset_failure_risk
 | Property | Value |
 |----------|-------|
-| **Purpose** | Unsupervised anomaly detection on IT assets |
-| **Sources** | 8 staging models (OCS hardware, bios, drives, storages, software, GLPI computers, infocoms, tickets) |
-| **Features** | device_age_years, bios_risk_level_encoded, worst_drive_health_encoded, total_drive_gb, drive_count, high_risk_software_count, risk_software_ratio, memory_gb, cpu_cores, incident_count, days_since_last_inventory, rule_based_risk_score |
-| **ML Status** | ❌ No Isolation Forest trained. `anomaly_score`, `is_anomaly` are NULL. |
-| **Limitations** | No labeled failure events — fully unsupervised. `rule_based_risk_score` is a heuristic baseline. |
+| **Purpose** | Supervised & unsupervised failure risk assessment on IT assets |
+| **Sources** | `silver_assets` only (all feature engineering delegated to silver) |
+| **Features** | asset_age_years, bios_risk_encoded, drive_health_encoded, storage_capacity_gb, drive_count, memory_gb, cpu_cores, high_risk_software_count, risk_software_ratio, software_installed_count, incident_count, hardware_incident_count, days_since_last_inventory, has_warranty, glpi_failure_proxy |
+| **Risk Scoring** | rule_based_risk_score (5-20 heuristic), risk_tier (info/low/medium/high), risk_explanation (human-readable reasons) |
+| **ML Status** | ❌ No Isolation Forest trained. `anomaly_score`, `is_anomaly` are NULL (populated by Python). |
+| **Limitations** | glpi_failure_proxy is a defensible proxy, not ground truth. Rule-based score is a heuristic baseline. |
+| **2026-06-13 Refactor** | Removed 8 direct staging joins. Single dependency on silver_assets. Added hardware_incident_count, glpi_failure_proxy, risk_tier, risk_explanation. |
 
 #### gold_user_activity_anomalies
 | Property | Value |
@@ -480,6 +482,22 @@ GLPI Ticket → "prio_critical urg_high impact_medium sla_breached
 | **Missing `_test` suffix** | `tests/staging/glpi/stg_glpi_computers.sql` | Breaks naming convention |
 | **Silver materialization mismatch** | `dbt_project.yml` | Silver is `view` but documentation says "tables" |
 
+### ✅ Completed (2026-06-13)
+
+| Item | Detail |
+|------|--------|
+| Predictive Maintenance Pipeline Validation | Full audit of silver_assets, gold_asset_failure_risk, GLPI failure labels |
+| drive_health_encoded MIN→MAX fix | Bug fix: MIN() returned best health, changed to MAX() for worst-case |
+| asset_age_years improved | Now uses buy_date from infocoms, falls back to BIOS date |
+| GLPI failure proxy designed | hardware_incident_count + glpi_failure_proxy implemented |
+| stg_glpi_tickets missing columns | Added itilcategories_id, items_id, itemtype, type, content, priority/urgency/impact |
+| Gold model refactored | Single dependency on silver_assets, no bronze refs, no duplicated staging joins |
+| Silver model refactored | OCS/GLPI only, Kaggle branch removed (perf), simpler software aggregation |
+| Gold schema updated | Added risk_tier, risk_explanation, glpi_failure_proxy, hardware_incident_count |
+| Gold tests (18/18 passing) | All not_null, unique, accepted_values tests pass |
+| Silver tests (18/18 passing) | All silver_assets tests pass |
+| PROJECT_MAP.md updated | Audit results, refactoring record, pending items moved |
+
 ### 🗑️ Orphaned / Unused Files
 
 | File | Reason |
@@ -509,16 +527,17 @@ GLPI Ticket → "prio_critical urg_high impact_medium sla_breached
 | Build Groq generation service | Critical | Notebook only |
 | Build RAGAS evaluation pipeline | Critical | Notebook only |
 | Build FastAPI serving layer | High | Not started |
-| Fix ~60 dbt staging test failures | High | Known |
+| Fix ~60 dbt staging test failures | High | In progress (42 remaining) |
 | Fix `stg_ocs_software` duplicate PKs | High | Known |
 | Fix `stg_ocs_storages_test.sql` copy-paste bug | Low | Known |
 | Rename `stg_glpi_computers.sql` test | Low | Known |
-| Fix export script DB name | High | Known |
-| Change silver materialization to `table` | Medium | Planned |
+| Fix export script DB name | High | Completed |
 | Move credentials to Airflow connections | Medium | Known |
 | Implement `pred_*` prediction tables | Critical | Not started |
 | Extract shared ingestion module (Kaggle scripts) | Medium | Known |
 | Add sentiment scoring to silver_tickets | Low | Null fields |
+| Materialize `stg_ocs_software` as table (MySQL perf bottleneck) | High | Recommended |
+| Build Kaggle hard-drive facts model (separate from silver_assets) | Medium | Recommended |
 
 ---
 
@@ -646,6 +665,72 @@ Deliverable: Updated pyproject.toml, updated notebook install cells
 ---
 
 ## 14. RECENT SESSION LOG
+
+### Session 2026-06-13 — Predictive Maintenance Validation & Pipeline Refactor
+
+**Critical Business Question:**
+- GLPI does NOT define a hardware failure event directly
+- Tickets have `type = 1` (incident) vs `type = 2` (request) — no explicit failure label
+- `itilcategories` have no "HARDWARE" category match in the dataset
+- A defensible failure proxy was designed using available signals
+
+**Feature Audit — silver_assets.sql:**
+
+| Feature | Source | Failure Signal Strength | Action |
+|---------|--------|------------------------|--------|
+| asset_age_years | buy_date (infocoms) → BIOS date fallback | Medium | Replaced bios_age_years with buy_date precedence |
+| bios_risk_encoded | OCS BIOS firmware date heuristic | Weak - kept | Documented as firmware age proxy |
+| drive_health_encoded | OCS drives (was MIN → BUG) | Medium | Fixed MIN→MAX to correctly capture worst health |
+| storage_capacity_gb | OCS drives | Weak | Kept for completeness |
+| drive_count | OCS drives | Medium | Kept |
+| memory_gb / cpu_cores | OCS hardware | Weak | Kept |
+| high_risk_software_count | OCS software risk | Medium | Kept |
+| risk_software_ratio | OCS software risk | Medium | Kept |
+| incident_count | GLPI tickets (all types) | Weak | Split into incident_count + hardware_incident_count |
+| hardware_incident_count | GLPI type=1 Computer incidents | Strong | **NEW** — core failure signal |
+| days_since_last_inventory | OCS dates | Medium | Kept |
+| has_warranty | GLPI infocoms | Weak | Kept |
+| glpi_failure_proxy | Derived from hardware_incidents | Medium | **NEW** — 1/0 failure evidence indicator |
+
+**Train/Serve Mismatch Detection:**
+- Original design: train on Kaggle (SMART features + failure_label), score on GLPI/OCS (NULL SMART)
+- **MISMATCH FOUND**: Kaggle incident_count = power cycles; GLPI incident_count = ticket count. Different semantics.
+- **MITIGATION**: Removed Kaggle branch from silver_assets (MySQL perf bottleneck). Silver_assets now OCS/GLPI only.
+- **REMAINING**: When ML training is implemented, model must only use shared features for GLPI scoring. SMART-only features (power_on_hours, reallocated_sectors) are Kaggle-only training signals.
+
+**GLPI Failure Proxy Design:**
+- `hardware_incident_count`: COUNT of tickets where `item_type = 'Computer'` AND `is_incident = TRUE`
+- `glpi_failure_proxy`: 1 if ≥3 hardware incidents, OR ≥1 critical (prio>=4) hardware incident, OR ≥2 hardware incidents
+- **Rationale**: Repeated incidents on same computer = recurring hardware problems; Critical-priority incidents = service-impacting failures
+- **Confidence**: Medium — defensible proxy, not ground truth
+
+**Bug Fixes:**
+1. **drive_health_encoded: MIN→MAX**: `storage_health` ordinal: critical=3, high=2, medium=1, good=0. MIN() returned best health (lowest number), not worst. Changed to MAX().
+2. **asset_age_years**: Now prefers GLPI `buy_date` when available, falls back to BIOS firmware date. BIOS date reflects firmware version, not asset purchase date.
+3. **stg_glpi_tickets missing columns**: Added `itilcategories_id`, `items_id`, `itemtype`, `type`→`is_incident`, `content`, raw `priority`/`urgency`/`impact` scores.
+
+**Gold Model Refactor:**
+- **BEFORE**: 8 staging model joins + 1 direct bronze ref. Duplicated all feature logic.
+- **AFTER**: Single dependency on `silver_assets`. No duplicated transformations. Added `risk_tier`, `risk_explanation`, `glpi_failure_proxy`.
+
+**Validation Results:**
+- ✅ `silver_assets` compiles + runs (view, 0.39s)
+- ✅ `silver_assets` tests: 18/18 PASS
+- ✅ `gold_asset_failure_risk` compiles + runs (table, 37s, 261 rows)
+- ✅ `gold_asset_failure_risk` tests: 18/18 PASS
+- ✅ `gold_asset_failure_risk` exists physically in `it_data_warehouse_gold`
+- ✅ Train/serve mismatch reviewed and documented
+- ✅ Failure label strategy documented
+- ✅ glpi_failure_proxy evaluated and implemented
+- ✅ Feature quality audited (table above)
+- ✅ No unresolved dbt errors
+
+**Known Limitations:**
+- MySQL performance: silver_assets as VIEW is slow (COUNT(*) takes >60s due to stg_ocs_software). Gold build took 37s but works.
+- `stg_ocs_software` is a view with SELECT DISTINCT * on 548K rows + MD5 — major bottleneck. Consider materializing as table.
+- Kaggle SMART data removed from silver_assets due to MySQL perf. Needs separate pipeline.
+- `storage_health` in OCS drives is capacity-utilization based (disk full), not SMART-derived. Named misleadingly.
+- `bios_risk_level` is BIOS firmware date heuristic, not CVE-derived. Named misleadingly.
 
 ### Session 2026-06-02 — dbt Fixes & Export Cleanup
 

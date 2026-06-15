@@ -554,6 +554,33 @@ models:
                 - low
                 - unknown
 
+      - name: ticket_type
+        description: "ITIL type: incident (1) or request (2)"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - incident
+                - request
+                - unknown
+
+      - name: is_incident
+        description: "TRUE if ticket type = 1 (incident)"
+        tests:
+          - not_null
+
+      - name: item_type
+        description: "Type of linked item (Computer, etc.)"
+
+      - name: items_id
+        description: "ID of the linked item (e.g., computer_id)"
+
+      - name: itilcategories_id
+        description: "ITIL category ID for this ticket"
+
+      - name: content
+        description: "Cleaned ticket description text"
+
       - name: source_year
         tests:
           - not_null
