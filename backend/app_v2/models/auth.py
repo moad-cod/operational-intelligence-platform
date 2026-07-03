@@ -12,6 +12,7 @@ class RegisterRequest(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     email: str = Field(pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
     password: str = Field(min_length=8)
+    role: str = Field(default="employee", pattern=r"^(employee|admin)$")
 
     @field_validator("password")
     @classmethod

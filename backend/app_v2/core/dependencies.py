@@ -32,6 +32,20 @@ def get_bm25_tokenizer(request: Request) -> BM25Tokenizer:
 
 # ── Auth ─────────────────────────────────────────────────
 
+
+class RoleChecker:
+    def __init__(self, allowed_roles: list[str]) -> None:
+        self.allowed_roles = allowed_roles
+
+    async def __call__(self, current_user: UserDB = Depends(get_current_user)) -> UserDB:
+        if current_user.role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires one of roles: {', '.join(self.allowed_roles)}",
+            )
+        return current_user
+
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
@@ -97,3 +111,16 @@ def get_rerank_service() -> "ReRankService":
 def get_generation_service() -> "GenerationService":
     from app_v2.services.generation_service import GenerationService
     return GenerationService()
+
+
+# ── Ticket service ────────────────────────────────────────
+
+def get_ticket_service(
+    db: AsyncSession = Depends(get_db),
+    query_svc: QueryService = Depends(get_query_service),
+    retrieval_svc: RetrievalService = Depends(get_retrieval_service),
+    rerank_svc: ReRankService = Depends(get_rerank_service),
+    generation_svc: GenerationService = Depends(get_generation_service),
+) -> "TicketService":
+    from app_v2.services.ticket_service import TicketService
+    return TicketService(db, query_svc, retrieval_svc, rerank_svc, generation_svc)

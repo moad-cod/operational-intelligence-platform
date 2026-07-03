@@ -36,7 +36,7 @@ class AuthService:
                 detail="Account disabled",
             )
         return {
-            "access_token": create_access_token({"sub": user.username}),
+            "access_token": create_access_token({"sub": user.username, "role": user.role}),
             "refresh_token": create_refresh_token({"sub": user.username}),
             "token_type": "bearer",
             "username": user.username,
@@ -48,6 +48,7 @@ class AuthService:
         username: str,
         email: str,
         plain_password: str,
+        role: str = "employee",
     ) -> dict:
         existing = await self.user_repo.get_user_by_username(username)
         if existing:
@@ -62,7 +63,7 @@ class AuthService:
                 detail="Email already registered",
             )
         user = await self.user_repo.create_user(
-            username, email, plain_password,
+            username, email, plain_password, role=role,
         )
         return {
             "message": "User created successfully",
@@ -90,6 +91,8 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return {
-            "access_token": create_access_token({"sub": user.username}),
+            "access_token": create_access_token({"sub": user.username, "role": user.role}),
             "token_type": "bearer",
+            "username": user.username,
+            "role": user.role,
         }

@@ -20,7 +20,7 @@ class UserRepository:
         username: str,
         email: str,
         plain_password: str,
-        role: str = "user",
+        role: str = "employee",
     ) -> UserDB:
         return await user_repository.create_user(
             username, email, plain_password, self.db, role

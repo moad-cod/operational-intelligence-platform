@@ -26,5 +26,5 @@ class UserDB(Base):
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     role: Mapped[str] = mapped_column(
-        String(20), default="user", nullable=False
+        String(20), default="employee", nullable=False
     )

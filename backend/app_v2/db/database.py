@@ -24,6 +24,9 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 import app_v2.db.user_model  # noqa: F401 - ensure table metadata is registered
+import app_v2.db.ticket_model  # noqa: F401
+import app_v2.db.feedback_model  # noqa: F401
+import app_v2.db.timeline_model  # noqa: F401
 
 
 async def init_db() -> None:

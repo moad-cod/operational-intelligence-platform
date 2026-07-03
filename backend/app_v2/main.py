@@ -17,6 +17,7 @@ from app_v2.middleware import (
 from app_v2.routers.auth import router as auth_router
 from app_v2.routers.registration import router as registration_router
 from app_v2.routers.search import router as search_router
+from app_v2.routers.tickets import router as tickets_router
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ app.add_middleware(LoggingMiddleware)
 app.include_router(auth_router)
 app.include_router(registration_router)
 app.include_router(search_router)
+app.include_router(tickets_router)
 
 
 @app.get("/health", tags=["System"])

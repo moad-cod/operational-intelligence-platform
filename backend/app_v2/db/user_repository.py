@@ -27,7 +27,7 @@ async def create_user(
     email: str,
     plain_password: str,
     db: AsyncSession,
-    role: str = "user",
+    role: str = "employee",
 ) -> UserDB:
     existing_username = await get_user_by_username(username, db)
     if existing_username:
