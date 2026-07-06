@@ -1,0 +1,11 @@
+query,num_chunks,context_tokens,completion_tokens,retrieval_ms,rerank_ms,generation_ms,total_ms,error
+VPN timeout after windows update,5,247,222,494.3,420.7,974.8,1891.2,
+outlook login issue,5,216,211,330.6,395.6,912.0,1639.5,
+printer not responding,5,298,257,322.9,331.4,1196.7,1852.2,
+wifi connection unstable,5,277,290,361.2,313.3,1267.9,1943.8,
+authentication failed,5,159,179,239.0,282.0,813.2,1335.7,
+email not sending,5,276,260,304.9,993.5,1152.1,2452.3,
+system access denied,5,112,204,351.7,188.6,892.0,1433.5,
+slow network performance,5,127,179,335.7,238.4,833.3,1408.8,
+password reset required,5,214,239,315.0,230.5,1219.1,1765.8,
+application crash on startup,5,49,293,396.6,171.9,1274.9,1844.6,

@@ -1,0 +1,74 @@
+# Ignore ETL
+etl/
+
+# Ignore data
+logs/
+parquet_exports/
+source_data/
+
+# Ignore external projects
+BI-Foundation-main/
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual envs
+backend/.venv/
+
+# Virtual Environment
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# Data
+*.parquet
+*.db
+*.sqlite
+*.sqlite3
+
+# Models / embeddings
+*.index
+*.pkl
+*.pt
+*.bin
+
+# Exports
+exports/
+parquet_exports/
+
+# Coverage
+.coverage
+htmlcov/sss
