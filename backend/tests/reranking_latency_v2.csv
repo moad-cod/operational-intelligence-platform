@@ -1,0 +1,6 @@
+query,retrieval_ms,rerank_ms,total_ms,hybrid_candidates,final_results,top_rerank_score
+VPN connection fails after password reset,450.8,3545.8,3996.6,20,5,4.5888
+outlook login issue,385.8,5437.5,5823.3,20,5,4.4155
+printer not responding,289.7,5494.2,5783.9,20,5,5.1231
+wifi connection unstable,277.4,5142.0,5419.4,20,5,5.6153
+email synchronization problem,271.4,6364.8,6636.2,20,5,7.7449

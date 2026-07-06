@@ -437,10 +437,14 @@ Each notebook is independently reproducible after its predecessors.
 
 ```
 app/
-├── main.py                     → FastAPI app with lifespan, CORS, router, startup pre-load
+├── main.py                     → FastAPI app with lifespan, CORS, middleware, routers, startup pre-load, auth seeding
 ├── core/
 │   ├── config.py               → Pydantic Settings class, .env loading, path resolution
-│   └── logging.py              → Structured logging (timestamps, levels, component names)
+│   ├── logging.py              → Structured logging (timestamps, levels, component names)
+│   ├── security.py             → JWT token creation/verification + bcrypt password hashing
+│   ├── database.py             → SQLite user store (User model, CRUD, seed users for 4 roles)
+│   ├── dependencies.py         → Dependency injection: get_current_user(), RoleChecker with RBAC matrix
+│   └── middleware.py           → RequestLoggingMiddleware (request ID, timing, structured logs)
 ├── shared/schemas/
 │   └── models.py               → 10 Pydantic models (HealthResponse, Retrieve*, Rerank*, Rag*,
 │                                   Triage*, Copilot*) — all request/response payloads
@@ -459,12 +463,62 @@ app/
 │   └── triage_inference.py     → XGBoost prediction (8 features) + LabelEncoder decode +
 │                                   escalation risk scoring (weighted composite, threshold 0.6)
 ├── api/
-│   ├── unified_routes.py       → 6 endpoints: /health, /retrieve, /rerank, /rag, /triage, /copilot
+│   ├── auth_routes.py          → 4 endpoints: POST /auth/login, /auth/refresh, /auth/logout, GET /auth/me
+│   ├── dashboard_routes.py     → 8 endpoints: /dashboard/{kpi,activity,radar,triage-feed,solutions,asset-risks,failure-predictions,security-clusters}
+│   ├── unified_routes.py       → 6 protected endpoints: /health, /retrieve, /rerank, /rag, /triage, /copilot
 │   ├── triage_routes.py        → Re-exports from unified_routes
 │   └── recommendation_routes.py → Stub (recommendation not implemented)
 └── tests/
-    └── test_api.py             → 8 tests: root, health, retrieve, empty query, rerank,
-                                   triage, rag, copilot — all ✅ pass
+    └── test_api.py             → 23 tests: auth flows, RBAC, all endpoints — all ✅ pass in 44s
+```
+
+### Auth & RBAC Architecture (NEW)
+
+```
+┌──────────────────────────────────────────────┐
+│  Authentication (JWT)                         │
+│                                                │
+│  POST /auth/login    → access + refresh token │
+│  POST /auth/refresh  → new access token        │
+│  POST /auth/logout   → invalidate session      │
+│  GET  /auth/me       → current user profile    │
+└──────────────────┬───────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────┐
+│  RBAC Matrix                                   │
+│                                                │
+│  ADMIN       → * (full access)                 │
+│  MANAGER     → dashboard, analytics, copilot   │
+│  TECHNICIAN  → retrieve, rag, triage           │
+│  VIEWER      → dashboard (read-only)           │
+└──────────────────┬───────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────┐
+│  RoleChecker(permissions) Depends              │
+│  403 Forbidden if permission not in role       │
+└──────────────────────────────────────────────┘
+```
+
+### Seeded Users
+
+| Username | Password | Role | Access |
+|----------|----------|------|--------|
+| admin | admin123 | ADMIN | Full access |
+| manager | manager123 | MANAGER | Dashboard, Analytics, Copilot |
+| tech | tech123 | TECHNICIAN | Retrieve, RAG, Triage |
+| viewer | viewer123 | VIEWER | Read-only dashboard |
+
+### Performance Middleware (NEW)
+
+```
+RequestLoggingMiddleware:
+  ┌→ [request_id] METHOD /path
+  │   ... handler execution ...
+  └→ [request_id] METHOD /path → STATUS (time)
+  Headers: X-Request-ID, X-Response-Time
+  Uncaught exceptions → 500 + request_id in response
 ```
 
 ---
@@ -541,6 +595,27 @@ app/
 | Tests | `tests/test_api.py` | ✅ 8 tests, all pass (root, health, retrieve, empty query, rerank, triage, rag, copilot) |
 | `.env` format | `backend/.env` | ✅ Config handles `=` with spaces robustly |
 
+### Recently Resolved (2026-06-04)
+
+| Gap | Location | Status |
+|-----|----------|--------|
+| JWT Authentication | `app/core/security.py` | ✅ Access + refresh tokens, bcrypt hashing |
+| RBAC | `app/core/dependencies.py` | ✅ RoleChecker with hierarchy + permission matrix |
+| User store | `app/core/database.py` | ✅ SQLite with 4 seeded roles |
+| Auth API routes | `app/api/auth_routes.py` | ✅ POST /auth/login, /refresh, /logout, GET /me |
+| Dashboard API routes | `app/api/dashboard_routes.py` | ✅ 8 endpoints with RBAC protection |
+| Request middleware | `app/core/middleware.py` | ✅ Request ID, timing, error logging |
+| Endpoint protection | `app/api/unified_routes.py` | ✅ All business endpoints RBAC-protected |
+| Tests | `tests/test_api.py` | ✅ 23 tests (auth, RBAC, all endpoints) |
+| Frontend API client | `src/lib/api/` | ✅ 6 modules (auth, dashboard, triage, rag, retrieval, copilot) |
+| Login UI | `src/app/login/` | ✅ Login form with role-aware navigation |
+| Auth context | `src/context/AuthContext.tsx` | ✅ Token management, auto-refresh, role context |
+| Protected routes | `src/app/AppShell.tsx` | ✅ Redirect to /login, sidebar only when authenticated |
+| Copilot UI | `src/app/copilot/`, `src/components/Copilot/` | ✅ Full AI workflow UI (query → retrieve → triage → response) |
+| Live dashboard data | `src/components/Dashboard/*` | ✅ All 8 widgets switched from mock to API data |
+| Loading states | `src/components/Dashboard/*` | ✅ Skeleton loading + React.memo for all widgets |
+| Account Toggle | `src/components/SideBar/AccountToggle.tsx` | ✅ Dynamic user display + logout button |
+
 ### Remaining Known Issues
 
 | Issue | Details |
@@ -548,39 +623,45 @@ app/
 | No GPU utilization | torch reports CUDA: False, all models run on CPU |
 | Recommendation service | `app/recommendation/` still stubs (not in scope) |
 | Vector store | `app/vector_store/` still stubs (not in scope) |
-| Database | `app/database/` still stubs (SQLAlchemy not wired) |
-| `app/core/security.py` | Empty stub (no auth implemented) |
+| Database | `app/database/` still stubs (SQLAlchemy not wired for event store) |
+| Frontend static generation | All pages pre-rendered as static (SSR not configured) |
 
 ---
 
 ## [CURRENT STATUS]
 
-- ✅ **Notebooks 01–11**: Fully functional and reproducible
-- ✅ **Notebook 08**: Productionized — CrossEncoder reranking with benchmark
-- ✅ **Notebook 09**: Productionized — Full Hybrid RAG pipeline (retrieval → rerank → generate)
-- ✅ **Notebook 10**: Productionized — XGBoost triage classifiers (priority/urgency/impact) + escalation risk
-- ✅ **Notebook 11**: **PRODUCTIONIZED** — Gold ML dataset builder (SLA merge, heuristic features, feature dictionary)
-- ✅ **FAISS index**: 230,088 vectors (384-dim, cosine normalized)
-- ✅ **BM25 corpus**: 230,088 tokenized documents
-- ✅ **Hybrid retrieval**: FAISS + BM25 + RRF (avg 358ms)
-- ✅ **CrossEncoder**: ms-marco-MiniLM-L-6-v2 (avg 370ms per query)
-- ✅ **Groq generation**: llama-3.3-70b-versatile (avg 1,091ms per response)
-- ✅ **RAG pipeline**: hybrid → rerank → generate → export → benchmark verified
-- ✅ **10/10 multi-query success**: All RAG queries return valid, grounded responses
-- ✅ **Triage models**: 3 XGBoost classifiers (priority acc=0.94, urgency acc=0.94, impact acc=0.97)
-- ✅ **Escalation risk**: Weighted composite scoring with configurable threshold (default 0.6)
-- ✅ **Model registry**: 3 models exported as XGBoost JSON (2.7 MB total)
-- ✅ **Feature importance**: retrieval_quality_score and avg_word_length are top predictors
-- ✅ **Gold ML dataset**: Consolidated 34-col dataset (230,088 rows) with SLA breach label + feature dictionary
-- ✅ **Gold ML quality report**: Dataset validation, target distributions, feature provenance documented
-- ✅ **App layer**: 15 production modules across 6 services (config, logging, schemas, retrieval, reranking, RAG, triage)
-- ✅ **API endpoints**: 6 REST endpoints — /health, /retrieve, /rerank, /rag, /triage, /copilot — all registered in OpenAPI/Swagger
-- ✅ **Retrieval service**: Modular FAISS + BM25 + RRF with lazy loading, config-driven paths, structured logging
-- ✅ **Reranking service**: CrossEncoder (ms-marco-MiniLM-L-6-v2) lazy-loaded, wired into RAG pipeline
-- ✅ **RAG pipeline**: Context builder (token-aware dedup), system prompt (IT Service Desk), Groq generator (llama-3.3-70b-versatile)
-- ✅ **Triage API**: XGBoost inference (8 features, 3 models), LabelEncoder decode (priority/urgency/impact), escalation risk scoring
-- ✅ **Tests**: 8 tests covering all endpoints — all pass in 24s
-- ❌ **RAGAS evaluation**: Not set up
+### Notebooks & ML ✅ (Existing)
+- Notebooks 01–11: Fully functional and reproducible
+- FAISS: 228,561 vectors (384-dim, cosine normalized, BM25 corpus)
+- Hybrid retrieval + CrossEncoder reranking + Groq generation (avg 1.82s total)
+- 3 XGBoost triage classifiers (priority acc=0.94, urgency acc=0.94, impact acc=0.97)
+- Gold ML dataset (34 cols, 230,088 rows)
+- Model registry: 3 models (2.7 MB), feature dictionary, quality report
+
+### Backend API ✅ (All New — June 2026)
+- **JWT Auth**: Login, refresh, logout, me — access + refresh token flow
+- **RBAC**: RoleChecker middleware (ADMIN, MANAGER, TECHNICIAN, VIEWER) with permission matrix
+- **User store**: SQLite with 4 seeded users (admin/manager/tech/viewer)
+- **Request middleware**: X-Request-ID, response timing, structured error logging
+- **18 API endpoints**: /health, /auth/* (4), /dashboard/* (8), /retrieve, /rerank, /rag, /triage, /copilot
+- **23 tests**: Auth flows, RBAC enforcement, all business endpoints — all pass ✅
+
+### Frontend Dashboard ✅ (All New — June 2026)
+- **Login UI**: /login page with form validation, password visibility toggle, demo credentials
+- **Auth context**: Token persistence (localStorage), auto-refresh, role-aware sidebar
+- **Protected routes**: / → Dashboard, /triage-center, /copilot — all require valid JWT
+- **API client**: 6 modules (auth, dashboard, triage, rag, retrieval, copilot)
+- **Live data**: All 8 dashboard widgets fetch from API (no mock data)
+- **Copilot UI**: Full AI workflow — input → retrieve → triage → response + sources
+- **Memoization**: React.memo on all dashboard widgets
+- **Loading states**: Skeleton loaders for every data-fetching component
+- **Dynamic AccountToggle**: Username, role badge, logout button
+
+### Known Gaps
+- ❌ RAGAS evaluation not set up
+- ⚠️ Embedding model query/index mismatch (both 384-dim, works)
+- ⚠️ Training data sparsity (0.7% labeled)
+- ⚠️ Gold ML datasets partially broken (is_escalated all zeros, anomaly scores null)
 
 ---
 
@@ -625,3 +706,12 @@ app/
 | 2026-05-30 | Phase 8 — Tests created | ✅ 8 tests, all pass |
 | 2026-05-30 | Phase 9 — Validation + Swagger verified | ✅ OpenAPI spec has all 7 paths (6 API + root) |
 | 2026-05-30 | Phase 10 — PROJECT_MAP.md synced | ✅ Completed items moved out of ORPHANS into Resolved |
+| 2026-06-04 | Phase 1 — JWT Auth (security.py, auth_routes.py) | ✅ Login/refresh/logout/me with bcrypt + HS256 |
+| 2026-06-04 | Phase 2 — RBAC (dependencies.py, RoleChecker) | ✅ ADMIN/MANAGER/TECHNICIAN/VIEWER + permission matrix |
+| 2026-06-04 | Phase 3 — Frontend API layer (src/lib/api/*) | ✅ 6 modules covering all backend endpoints |
+| 2026-06-04 | Phase 4 — Login UI + AuthContext + protected routes | ✅ /login page, AppShell guard, sidebar auth |
+| 2026-06-04 | Phase 5 — Dashboard switched to live API data | ✅ All 8 widgets, React.memo, skeleton loaders |
+| 2026-06-04 | Phase 6 — Copilot UI | ✅ Query → retrieve → triage → response with source viewer |
+| 2026-06-04 | Phase 7 — Request middleware + logging | ✅ X-Request-ID, timing, error handling |
+| 2026-06-04 | Phase 8 — Tests (back-end 23, front-end build) | ✅ All backend tests pass, frontend builds clean |
+| 2026-06-04 | Phase 9 — PROJECT_MAP.md synced | ✅ Auth + RBAC + Frontend sections updated |
