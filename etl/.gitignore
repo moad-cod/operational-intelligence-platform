@@ -1,81 +1,96 @@
-# Ignore AI backend
-backend/
+# ==========================================
+# Project-specific
+# ==========================================
 
-# Ignore generated data
+# AI backend (remove this line if you WANT to version the backend)
+# backend/
+
+# Generated data
 logs/
 parquet_exports/
 source_data/
 
-# Ignore external projects
+# External projects
 BI-Foundation-main/
 
+# ==========================================
 # Python
-__pycache__/
-*.pyc
+# ==========================================
 
-# Virtual env
-etl/.venv/
-
-# ----------------------------
-# 🐍 Python / uv / venv
-# ----------------------------
-.venv/
-venv/
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-*.log
 
-# ----------------------------
-# 📦 dbt
-# ----------------------------
+# Virtual environments
+.venv/
+venv/
+etl/.venv/
+backend/.venv/
+
+# ==========================================
+# dbt
+# ==========================================
+
 target/
 dbt_packages/
-logs/
-.env
 
 # dbt artifacts
 manifest.json
 run_results.json
 catalog.json
 
-# ----------------------------
-# 🔐 Secrets / configs
-# ----------------------------
-profiles.yml
-*.env
+# ==========================================
+# Environment & Secrets
+# ==========================================
+
+.env
 .env.*
+*.env
+profiles.yml
 *.key
 *.pem
 
-# ----------------------------
-# 🛠 IDE / OS
-# ----------------------------
+# ==========================================
+# IDE / Editor
+# ==========================================
+
 .vscode/
 .idea/
+
+# ==========================================
+# Operating System
+# ==========================================
+
 .DS_Store
 Thumbs.db
 
-# ----------------------------
-# 🐳 Docker (optional)
-# ----------------------------
-*.pid
-*.seed
-*.pid.lock
+# ==========================================
+# Docker
+# ==========================================
 
-# ----------------------------
-# 📊 Data / temp files
-# ----------------------------
+*.pid
+*.pid.lock
+*.seed
+
+# ==========================================
+# Logs
+# ==========================================
+
+*.log
+
+# ==========================================
+# Data files
+# ==========================================
+
 *.csv
 *.parquet
 *.sqlite
 *.db
 
-# ----------------------------
-# 🚫 Ignore source_db_init content
-# ----------------------------
-source_db_init/*
+# ==========================================
+# Source DB initialization
+# ==========================================
 
-# ✅ BUT keep the folder itself (important for repo structure)
+source_db_init/*
 !source_db_init/.gitkeep
